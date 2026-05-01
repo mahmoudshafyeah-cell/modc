@@ -1,0 +1,14 @@
+{
+  "name": "ModC - المنتجات الرقمية",
+  "short_name": "ModC",
+  "description": "منصتك الرقمية الأولى في سوريا",
+  "start_url": "/homepage",
+  "display": "standalone",
+  "background_color": "#070410",
+  "theme_color": "#0c71b2",
+  "orientation": "any",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

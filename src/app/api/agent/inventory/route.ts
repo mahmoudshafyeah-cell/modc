@@ -1,0 +1,31 @@
+import { createClient } from '@supabase/supabase-js';
+import { NextResponse } from 'next/server';
+import jwt from 'jsonwebtoken';
+
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-this';
+
+export async function GET(req: Request) {
+  try {
+    const authHeader = req.headers.get('Authorization');
+    const token = authHeader?.replace('Bearer ', '');
+    if (!token) return NextResponse.json({ error: 'غير مصرح' }, { status: 401 });
+
+    let decoded;
+    try {
+      decoded = jwt.verify(token, JWT_SECRET) as { id: string; role: string };
+    } catch {
+      return NextResponse.json({ error: 'توكن غير صالح' }, { status: 401 });
+    }
+    if (decoded.role !== 'agent' && decoded.role !== 'super_admin') {
+      return NextResponse.json({ error: 'غير مصرح' }, { status: 403 });
+    }
+
+    const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+
+    const { data: inventory } = await supabase.from('agent_inventory').select('*').eq('agent_id', decoded.id).order('created_at', { ascending: false });
+
+    return NextResponse.json({ inventory: inventory || [] });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message || 'خطأ غير متوقع' }, { status: 500 });
+  }
+}
