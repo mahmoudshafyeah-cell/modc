@@ -184,9 +184,7 @@ export default function DashboardSidebar({ userData }: { userData?: UserData | n
   const displayName = user.full_name || user.email?.split('@')[0] || 'مستخدم';
   const userInitial = displayName.charAt(0);
   const isBalanceNegative = (user.balance || 0) < 0;
-  const isAdmin = user.role === 'admin' || user.role === 'super_admin';
-
-
+  const isAdmin = userData?.role === 'admin' || userData?.role === 'super_admin';
   const toggleSection = (id: string) => setOpenSections(prev => ({ ...prev, [id]: !prev[id] }));
 
   useEffect(() => {
