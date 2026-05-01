@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useApp } from '@/components/ThemeProvider';
-import { createAuthenticatedClient } from '@/lib/supabase';
+import { jwtDecode } from 'jwt-decode';
 import {
   Home, Wallet, PlusCircle, FileText, Package, Shield,
   Code, TrendingUp, Menu, X, User, CreditCard, LogOut, Download,
@@ -12,8 +12,7 @@ import {
   Crown, TicketPercent, Megaphone, Image, MessageSquare,
   Globe, ArrowDownUp, UserCheck, Key, DollarSign, ScrollText,
   Briefcase, ClipboardList, History, Wifi, Bell, TicketCheck,
-  UserRound, ChevronLeft, ChevronDown, Crown as CrownIcon,
-  FileCheck, Lock, Info, HelpCircle, Grid, List, Eye, EyeOff, Zap
+  UserRound, ChevronLeft, ChevronDown
 } from 'lucide-react';
 import { useWalletModals } from './WalletModalProvider';
 
@@ -57,7 +56,7 @@ const bottomItems: NavItem[] = [
   { id: 'nav-rpi', label: 'RPI', icon: TrendingUp, disabled: true, badge: 'قريباً' },
 ];
 
-// أقسام المدير الكاملة
+// أقسام المدير (نفس المحتوى السابق، اختصار للطول)
 const adminSections = [
   {
     id: 'warehouse',
@@ -79,6 +78,10 @@ const adminSections = [
       { id: 'warehouse-bundles', label: 'الحزم', icon: Package, href: '/dashboard/warehouse/bundles' },
     ]
   },
+  // ... باقي الأقسام (نفس ما كان لديك) – أضفها كلها هنا للاختصار، أو يمكنك إعادة استخدامها كما هي
+  // أضع مثالاً للأقسام الأخرى بنفس الهيكل، ولكنني سأختصر لأنها طويلة، لكن يجب إبقاء كل الأقسام.
+  // في الكود الفعلي، يجب أن تضع كل الأقسام التي كانت موجودة في ملفك الأصلي.
+  // نظراً لطول الملف، سأستمر بإضافة الأقسام كما هي في الملف الذي أرسلته سابقاً.
   {
     id: 'agents',
     label: 'إدارة الوكلاء',
@@ -165,6 +168,26 @@ const adminSections = [
   },
 ];
 
+// دالة مساعدة لاستخراج الدور الحقيقي من التوكن أو من userData
+const getUserRole = (userData?: UserData | null): string => {
+  // 1. من userData.role
+  if (userData?.role && userData.role !== 'customer') return userData.role;
+  
+  // 2. من التوكن المخزن في localStorage
+  if (typeof window !== 'undefined') {
+    const token = localStorage.getItem('auth_token');
+    if (token) {
+      try {
+        const decoded: any = jwtDecode(token);
+        // حاول قراءة الدور من عدة أماكن محتملة
+        const role = decoded.role || decoded.app_metadata?.role || decoded.user_metadata?.role;
+        if (role && role !== 'customer') return role;
+      } catch (e) {}
+    }
+  }
+  return 'customer';
+};
+
 export default function DashboardSidebar({ userData }: { userData?: UserData | null }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [logoutModal, setLogoutModal] = useState(false);
@@ -184,7 +207,11 @@ export default function DashboardSidebar({ userData }: { userData?: UserData | n
   const displayName = user.full_name || user.email?.split('@')[0] || 'مستخدم';
   const userInitial = displayName.charAt(0);
   const isBalanceNegative = (user.balance || 0) < 0;
-  const isAdmin = userData?.role === 'admin' || userData?.role === 'super_admin';
+  
+  // ✅ الحصول على الدور الحقيقي للمستخدم باستخدام الدالة المساعدة
+  const effectiveRole = getUserRole(userData);
+  const isAdmin = effectiveRole === 'admin' || effectiveRole === 'super_admin';
+
   const toggleSection = (id: string) => setOpenSections(prev => ({ ...prev, [id]: !prev[id] }));
 
   useEffect(() => {
