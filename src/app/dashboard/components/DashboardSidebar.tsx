@@ -1,6 +1,7 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+import { getUserRole } from '@/lib/authHelpers';
 import { usePathname, useRouter } from 'next/navigation';
 import { useApp } from '@/components/ThemeProvider';
 import { jwtDecode } from 'jwt-decode';
@@ -209,9 +210,13 @@ export default function DashboardSidebar({ userData }: { userData?: UserData | n
   const isBalanceNegative = (user.balance || 0) < 0;
   
   // ✅ الحصول على الدور الحقيقي للمستخدم باستخدام الدالة المساعدة
-  const effectiveRole = getUserRole(userData);
-  const isAdmin = effectiveRole === 'admin' || effectiveRole === 'super_admin';
+  const [effectiveRole, setEffectiveRole] = useState('customer');
 
+useEffect(() => {
+  getUserRole().then(setEffectiveRole);
+}, []);
+
+  const isAdmin = effectiveRole === 'admin' || effectiveRole === 'super_admin';
   const toggleSection = (id: string) => setOpenSections(prev => ({ ...prev, [id]: !prev[id] }));
 
   useEffect(() => {

@@ -8,8 +8,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Eye, EyeOff, Mail, Lock } from "lucide-react";
 import { toast } from "sonner";
-import { supabase } from "@/lib/supabase"; // ✅ استخدم العميل الجاهز
-import { jwtDecode } from "jwt-decode";
+import { supabase } from "@/lib/supabase";
 
 const loginSchema = z.object({
   email: z.string().email("يرجى إدخال بريد إلكتروني صالح"),
@@ -36,7 +35,6 @@ export default function LoginForm() {
   const onSubmit = async (data: LoginFormValues) => {
     setIsLoading(true);
     try {
-      // 1. تسجيل الدخول مباشرة عبر Supabase Auth باستخدام العميل الجاهز
       const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
         email: data.email,
         password: data.password,
@@ -55,29 +53,18 @@ export default function LoginForm() {
         return;
       }
 
-      // تخزين التوكن
       localStorage.setItem('auth_token', session.access_token);
 
-      // 2. جلب دور المستخدم من جدول profiles (باستخدام supabase العادي – لكن بعد تسجيل الدخول سيكون التوكن مضمنًا)
-      // نستخدم supabase.admin مباشرة؟ الأسهل: نستدعي API مخصص لجلب الدور حتى لا نضطر لاستخدام service role.
-      // بدلاً من ذلك، يمكننا قراءة الدور من التوكن إذا كان مضمنًا في user_metadata.
-      // لنحاول أولاً قراءة الدور من التوكن:
-      let role = 'customer';
-      try {
-        const decoded: any = jwtDecode(session.access_token);
-        role = decoded.role || decoded.user_metadata?.role || 'customer';
-      } catch {
-        // إذا لم نستطع فك التوكن، نستخدم طريقة احتياطية: جلب الدور من profiles عبر API بسيط
-        try {
-          const res = await fetch('/api/user/role', {
-            headers: { Authorization: `Bearer ${session.access_token}` }
-          });
-          const roleData = await res.json();
-          if (res.ok && roleData.role) role = roleData.role;
-        } catch {}
-      }
+      // جلب الدور من API
+      const roleRes = await fetch('/api/user/role', {
+        headers: { Authorization: `Bearer ${session.access_token}` }
+      });
+      const roleData = await roleRes.json();
+      const role = roleData.role || 'customer';
 
-      // 3. تحديد مسار التوجيه
+      // تخزين الدور في localStorage لاستخدامه في AuthGuard
+      localStorage.setItem('user_role', role);
+
       let redirectPath = '/customer-dashboard';
       if (role === 'super_admin' || role === 'admin') redirectPath = '/dashboard';
       else if (role === 'agent' || role === 'sub_agent') redirectPath = '/agent-dashboard';

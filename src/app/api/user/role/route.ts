@@ -1,3 +1,4 @@
+// src/app/api/user/role/route.ts
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
@@ -11,10 +12,9 @@ export async function GET(req: Request) {
     { global: { headers: { Authorization: `Bearer ${token}` } } }
   );
   
-  const { data: { user }, error } = await supabase.auth.getUser();
-  if (error || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: 'Not found' }, { status: 404 });
   
-  // من جدول profiles
   const { data: profile } = await supabase
     .from('profiles')
     .select('role')
