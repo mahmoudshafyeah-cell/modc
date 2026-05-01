@@ -1,7 +1,7 @@
 'use client';
 import { ReactNode } from 'react';
 import DashboardSidebar from './components/DashboardSidebar';
-import { WalletModalProvider } from '@/app/dashboard/components/WalletModalProvider';
+import { WalletModalProvider } from './components/WalletModalProvider';
 
 export default function AdminDashboardLayout({ children }: { children: ReactNode }) {
   return (
