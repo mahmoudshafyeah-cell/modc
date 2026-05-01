@@ -1,13 +1,13 @@
 'use client';
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import PlatformUsersPage from '@/app/dashboard/platform/users/page';
-import PaymentMethodsPage from '@/app/dashboard/payment-methods/page';
-import ProductsPage from '@/app/dashboard/warehouse/products/page';
-import CouponsPage from '@/app/dashboard/coupons/page';
-import CustomersPage from '@/app/dashboard/customers/page';
-import TicketsPage from '@/app/dashboard/tickets/page';
-import SettingsPage from '@/app/dashboard/settings/page';
+import PlatformUsersPage from '@/app/admin/dashboard/platform/users/page';
+import PaymentMethodsPage from '@/app/admin/dashboard/payment-methods/page';
+import ProductsPage from '@/app/admin/dashboard/warehouse/products/page';
+import CouponsPage from '@/app/admin/dashboard/coupons/page';
+import CustomersPage from '@/app/admin/dashboard/customers/page';
+import TicketsPage from '@/app/admin/dashboard/tickets/page';
+import SettingsPage from '@/app/admin/dashboard/settings/page';
 import { Package, Users, CreditCard, TicketPercent, UserRound, TicketCheck, Settings } from 'lucide-react';
 import AuthGuard from '@/components/AuthGuard';
 

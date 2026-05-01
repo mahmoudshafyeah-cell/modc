@@ -64,19 +64,19 @@ const adminSections = [
     label: 'إدارة المستودع',
     icon: Warehouse,
     items: [
-      { id: 'warehouse-dashboard', label: 'لوحة المستودع', icon: Warehouse, href: '/dashboard/warehouse' },
-      { id: 'warehouse-assets', label: 'الأصول', icon: Boxes, href: '/dashboard/warehouse/assets' },
-      { id: 'warehouse-products', label: 'المنتجات المحلية', icon: Package, href: '/dashboard/warehouse/products' },
-      { id: 'warehouses', label: 'المستودعات', icon: Layers, href: '/dashboard/warehouse/warehouses' },
-      { id: 'warehouse-providers', label: 'الموردون', icon: Truck, href: '/dashboard/warehouse/providers' },
-      { id: 'warehouse-orders', label: 'الطلبات والمرتجعات', icon: ClipboardList, href: '/dashboard/warehouse/orders' },
-      { id: 'warehouse-reports', label: 'التقارير', icon: BarChart3, href: '/dashboard/warehouse/reports' },
-      { id: 'warehouse-settings', label: 'إعدادات المستودع', icon: Settings, href: '/dashboard/warehouse/settings' },
-      { id: 'warehouse-categories', label: 'فئات الأصول', icon: Folder, href: '/dashboard/warehouse/categories' },
-      { id: 'warehouse-asset-types', label: 'أنواع الأصول', icon: Tag, href: '/dashboard/warehouse/asset-types' },
-      { id: 'warehouse-alerts', label: 'تنبيهات المخزون', icon: AlertTriangle, href: '/dashboard/warehouse/alerts' },
-      { id: 'warehouse-shipping', label: 'طلبات الشحن', icon: Truck, href: '/dashboard/warehouse/shipping' },
-      { id: 'warehouse-bundles', label: 'الحزم', icon: Package, href: '/dashboard/warehouse/bundles' },
+      { id: 'warehouse-dashboard', label: 'لوحة المستودع', icon: Warehouse, href: '/admin/dashboard/warehouse' },
+      { id: 'warehouse-assets', label: 'الأصول', icon: Boxes, href: '/admin/dashboard/warehouse/assets' },
+      { id: 'warehouse-products', label: 'المنتجات المحلية', icon: Package, href: '/admin/dashboard/warehouse/products' },
+      { id: 'warehouses', label: 'المستودعات', icon: Layers, href: '/admin/dashboard/warehouse/warehouses' },
+      { id: 'warehouse-providers', label: 'الموردون', icon: Truck, href: '/admin/dashboard/warehouse/providers' },
+      { id: 'warehouse-orders', label: 'الطلبات والمرتجعات', icon: ClipboardList, href: '/admin/dashboard/warehouse/orders' },
+      { id: 'warehouse-reports', label: 'التقارير', icon: BarChart3, href: '/admin/dashboard/warehouse/reports' },
+      { id: 'warehouse-settings', label: 'إعدادات المستودع', icon: Settings, href: '/admin/dashboard/warehouse/settings' },
+      { id: 'warehouse-categories', label: 'فئات الأصول', icon: Folder, href: '/admin/dashboard/warehouse/categories' },
+      { id: 'warehouse-asset-types', label: 'أنواع الأصول', icon: Tag, href: '/admin/dashboard/warehouse/asset-types' },
+      { id: 'warehouse-alerts', label: 'تنبيهات المخزون', icon: AlertTriangle, href: '/admin/dashboard/warehouse/alerts' },
+      { id: 'warehouse-shipping', label: 'طلبات الشحن', icon: Truck, href: '/admin/dashboard/warehouse/shipping' },
+      { id: 'warehouse-bundles', label: 'الحزم', icon: Package, href: '/admin/dashboard/warehouse/bundles' },
     ]
   },
   // ... باقي الأقسام (نفس ما كان لديك) – أضفها كلها هنا للاختصار، أو يمكنك إعادة استخدامها كما هي
@@ -88,16 +88,16 @@ const adminSections = [
     label: 'إدارة الوكلاء',
     icon: ShoppingCart,
     items: [
-      { id: 'agentPurchase', label: 'شراء الوكيل', icon: ShoppingCart, href: '/dashboard/agents/purchase' },
-      { id: 'agentInventory', label: 'مخزون الوكيل', icon: Briefcase, href: '/dashboard/agents/inventory' },
-      { id: 'orders', label: 'الطلبات', icon: ClipboardList, href: '/dashboard/agents/orders', permission: 'view_orders' },
-      { id: 'returns', label: 'المرتجعات', icon: RefreshCcw, href: '/dashboard/agents/returns', permission: 'manage_returns' },
-      { id: 'vipLevels', label: 'مستويات VIP', icon: Crown, href: '/dashboard/agents/vip-levels', permission: 'manage_settings' },
-      { id: 'agentCommissions', label: 'عمولات الوكلاء', icon: Users, href: '/dashboard/agents/commissions', permission: 'manage_settings' },
-      { id: 'agentCredits', label: 'حدود الائتمان', icon: CreditCard, href: '/dashboard/agents/credits', permission: 'manage_settings' },
-      { id: 'creditRequests', label: 'طلبات المديونية', icon: FileText, href: '/dashboard/agents/credit-requests', permission: 'manage_settings' },
-      { id: 'kycRequests', label: 'طلبات KYC', icon: Shield, href: '/dashboard/agents/kyc', permission: 'manage_settings' },
-      { id: 'agentsList', label: 'قائمة الوكلاء', icon: UserCheck, href: '/dashboard/agents/list', permission: 'manage_users' },
+      { id: 'agentPurchase', label: 'شراء الوكيل', icon: ShoppingCart, href: '/admin/dashboard/agents/purchase' },
+      { id: 'agentInventory', label: 'مخزون الوكيل', icon: Briefcase, href: '/admin/dashboard/agents/inventory' },
+      { id: 'orders', label: 'الطلبات', icon: ClipboardList, href: '/admin/dashboard/agents/orders', permission: 'view_orders' },
+      { id: 'returns', label: 'المرتجعات', icon: RefreshCcw, href: '/admin/dashboard/agents/returns', permission: 'manage_returns' },
+      { id: 'vipLevels', label: 'مستويات VIP', icon: Crown, href: '/admin/dashboard/agents/vip-levels', permission: 'manage_settings' },
+      { id: 'agentCommissions', label: 'عمولات الوكلاء', icon: Users, href: '/admin/dashboard/agents/commissions', permission: 'manage_settings' },
+      { id: 'agentCredits', label: 'حدود الائتمان', icon: CreditCard, href: '/admin/dashboard/agents/credits', permission: 'manage_settings' },
+      { id: 'creditRequests', label: 'طلبات المديونية', icon: FileText, href: '/admin/dashboard/agents/credit-requests', permission: 'manage_settings' },
+      { id: 'kycRequests', label: 'طلبات KYC', icon: Shield, href: '/admin/dashboard/agents/kyc', permission: 'manage_settings' },
+      { id: 'agentsList', label: 'قائمة الوكلاء', icon: UserCheck, href: '/admin/dashboard/agents/list', permission: 'manage_users' },
     ]
   },
   {
@@ -105,9 +105,9 @@ const adminSections = [
     label: 'المزودون والشحن',
     icon: Truck,
     items: [
-      { id: 'providers', label: 'المزودون', icon: Truck, href: '/dashboard/providers', permission: 'manage_providers' },
-      { id: 'providerAPI', label: 'إدارة API الموردين', icon: Download, href: '/dashboard/providers/api', permission: 'manage_settings' },
-      { id: 'shipping', label: 'طلبات الشحن', icon: Truck, href: '/dashboard/shipping' },
+      { id: 'providers', label: 'المزودون', icon: Truck, href: '/admin/dashboard/providers', permission: 'manage_providers' },
+      { id: 'providerAPI', label: 'إدارة API الموردين', icon: Download, href: '/admin/dashboard/providers/api', permission: 'manage_settings' },
+      { id: 'shipping', label: 'طلبات الشحن', icon: Truck, href: '/admin/dashboard/shipping' },
     ]
   },
   {
@@ -115,9 +115,9 @@ const adminSections = [
     label: 'العملاء والدعم',
     icon: UserRound,
     items: [
-      { id: 'customers', label: 'العملاء', icon: UserRound, href: '/dashboard/customers', permission: 'manage_customers' },
-      { id: 'tickets', label: 'الدعم الفني', icon: TicketCheck, href: '/dashboard/tickets', permission: 'view_tickets' },
-      { id: 'coupons', label: 'العروض والكوبونات', icon: TicketPercent, href: '/dashboard/coupons', permission: 'view_coupons' },
+      { id: 'customers', label: 'العملاء', icon: UserRound, href: '/admin/dashboard/customers', permission: 'manage_customers' },
+      { id: 'tickets', label: 'الدعم الفني', icon: TicketCheck, href: '/admin/dashboard/tickets', permission: 'view_tickets' },
+      { id: 'coupons', label: 'العروض والكوبونات', icon: TicketPercent, href: '/admin/dashboard/coupons', permission: 'view_coupons' },
     ]
   },
   {
@@ -125,10 +125,10 @@ const adminSections = [
     label: 'التقارير والسجلات',
     icon: FileText,
     items: [
-      { id: 'reports', label: 'التقارير', icon: FileText, href: '/dashboard/reports', permission: 'view_reports' },
-      { id: 'transactions', label: 'سجل الحركات', icon: History, href: '/dashboard/transactions', permission: 'view_transactions' },
-      { id: 'auditLog', label: 'سجل التدقيق', icon: ScrollText, href: '/dashboard/audit-log', permission: 'view_audit_log' },
-      { id: 'connectionLogs', label: 'سجل الاتصال', icon: Wifi, href: '/dashboard/connection-logs', permission: 'manage_settings' },
+      { id: 'reports', label: 'التقارير', icon: FileText, href: '/admin/dashboard/reports', permission: 'view_reports' },
+      { id: 'transactions', label: 'سجل الحركات', icon: History, href: '/admin/dashboard/transactions', permission: 'view_transactions' },
+      { id: 'auditLog', label: 'سجل التدقيق', icon: ScrollText, href: '/admin/dashboard/audit-log', permission: 'view_audit_log' },
+      { id: 'connectionLogs', label: 'سجل الاتصال', icon: Wifi, href: '/admin/dashboard/connection-logs', permission: 'manage_settings' },
     ]
   },
   {
@@ -136,8 +136,8 @@ const adminSections = [
     label: 'الإشعارات والتنبيهات',
     icon: Bell,
     items: [
-      { id: 'notifications', label: 'الإشعارات', icon: Megaphone, href: '/dashboard/notifications' },
-      { id: 'alerts', label: 'التنبيهات', icon: Bell, href: '/dashboard/alerts', permission: 'manage_alerts' },
+      { id: 'notifications', label: 'الإشعارات', icon: Megaphone, href: '/admin/dashboard/notifications' },
+      { id: 'alerts', label: 'التنبيهات', icon: Bell, href: '/admin/dashboard/alerts', permission: 'manage_alerts' },
     ]
   },
   {
@@ -145,12 +145,12 @@ const adminSections = [
     label: 'إدارة المنصة',
     icon: Globe,
     items: [
-      { id: 'platformUsers', label: 'مستخدمو المنصة', icon: Globe, href: '/dashboard/platform/users', permission: 'access_platform_api' },
-      { id: 'livePlatform', label: 'المنصة الحية', icon: Globe, href: '/dashboard/platform/live', permission: 'manage_settings' },
-      { id: 'depositsWithdrawals', label: 'الإيداعات والسحوبات', icon: ArrowDownUp, href: '/dashboard/platform/deposits-withdrawals', permission: 'manage_settings' },
-      { id: 'p2pDeposits', label: 'إيداعات P2P', icon: ArrowDownUp, href: '/dashboard/platform/p2p-deposits', permission: 'manage_p2p_deposits' },
-      { id: 'banners', label: 'إدارة البانرات', icon: Image, href: '/dashboard/platform/banners', permission: 'manage_settings' },
-      { id: 'ticker', label: 'الشريط الإخباري', icon: MessageSquare, href: '/dashboard/platform/ticker', permission: 'manage_settings' },
+      { id: 'platformUsers', label: 'مستخدمو المنصة', icon: Globe, href: '/admin/dashboard/platform/users', permission: 'access_platform_api' },
+      { id: 'livePlatform', label: 'المنصة الحية', icon: Globe, href: '/admin/dashboard/platform/live', permission: 'manage_settings' },
+      { id: 'depositsWithdrawals', label: 'الإيداعات والسحوبات', icon: ArrowDownUp, href: '/admin/dashboard/platform/deposits-withdrawals', permission: 'manage_settings' },
+      { id: 'p2pDeposits', label: 'إيداعات P2P', icon: ArrowDownUp, href: '/admin/dashboard/platform/p2p-deposits', permission: 'manage_p2p_deposits' },
+      { id: 'banners', label: 'إدارة البانرات', icon: Image, href: '/admin/dashboard/platform/banners', permission: 'manage_settings' },
+      { id: 'ticker', label: 'الشريط الإخباري', icon: MessageSquare, href: '/admin/dashboard/platform/ticker', permission: 'manage_settings' },
     ]
   },
   {
@@ -158,13 +158,13 @@ const adminSections = [
     label: 'الإدارة',
     icon: Shield,
     items: [
-      { id: 'users', label: 'المستخدمين (محلي)', icon: Users, href: '/dashboard/users', permission: 'manage_users' },
-      { id: 'staffTracking', label: 'تتبع الموظفين', icon: UserCheck, href: '/dashboard/staff-tracking', permission: 'manage_users' },
-      { id: 'roles', label: 'الأدوار والصلاحيات', icon: Shield, href: '/dashboard/roles', permission: 'manage_roles' },
-      { id: 'paymentMethods', label: 'أدوات مالية', icon: DollarSign, href: '/dashboard/payment-methods', permission: 'manage_settings' },
-      { id: 'profile', label: 'الملف الشخصي', icon: User, href: '/dashboard/profile' },
-      { id: 'changePassword', label: 'تغيير كلمة المرور', icon: Key, href: '/dashboard/change-password' },
-      { id: 'settings', label: 'الإعدادات', icon: Settings, href: '/dashboard/settings', permission: 'manage_settings' },
+      { id: 'users', label: 'المستخدمين (محلي)', icon: Users, href: '/admin/dashboard/users', permission: 'manage_users' },
+      { id: 'staffTracking', label: 'تتبع الموظفين', icon: UserCheck, href: '/admin/dashboard/staff-tracking', permission: 'manage_users' },
+      { id: 'roles', label: 'الأدوار والصلاحيات', icon: Shield, href: '/admin/dashboard/roles', permission: 'manage_roles' },
+      { id: 'paymentMethods', label: 'أدوات مالية', icon: DollarSign, href: '/admin/dashboard/payment-methods', permission: 'manage_settings' },
+      { id: 'profile', label: 'الملف الشخصي', icon: User, href: '/admin/dashboard/profile' },
+      { id: 'changePassword', label: 'تغيير كلمة المرور', icon: Key, href: '/admin/dashboard/change-password' },
+      { id: 'settings', label: 'الإعدادات', icon: Settings, href: '/admin/dashboard/settings', permission: 'manage_settings' },
     ]
   },
 ];
@@ -211,10 +211,6 @@ export default function DashboardSidebar({ userData }: { userData?: UserData | n
   
   // ✅ الحصول على الدور الحقيقي للمستخدم باستخدام الدالة المساعدة
   const [effectiveRole, setEffectiveRole] = useState('customer');
-
-useEffect(() => {
-  getUserRole().then(setEffectiveRole);
-}, []);
 
   const isAdmin = effectiveRole === 'admin' || effectiveRole === 'super_admin';
   const toggleSection = (id: string) => setOpenSections(prev => ({ ...prev, [id]: !prev[id] }));
