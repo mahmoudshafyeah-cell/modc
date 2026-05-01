@@ -1,4 +1,3 @@
-// src/app/dashboard/components/WalletModalProvider.tsx
 'use client';
 import { createContext, useContext, ReactNode } from 'react';
 import { toast } from 'sonner';
@@ -12,14 +11,11 @@ const WalletModalsContext = createContext<WalletModalsContextType | undefined>(u
 
 export function WalletModalProvider({ children }: { children: ReactNode }) {
   const openDeposit = () => {
-    // هنا يمكنك إضافة منطق فتح نافذة الإيداع
     toast.info('سيتم إضافة وظيفة الإيداع قريبًا');
   };
-  
   const openWithdraw = () => {
     toast.info('سيتم إضافة وظيفة السحب قريبًا');
   };
-
   return (
     <WalletModalsContext.Provider value={{ openDeposit, openWithdraw }}>
       {children}
