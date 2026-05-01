@@ -1,11 +1,10 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { createClient } from '@supabase/supabase-js';
+import { createAuthenticatedClient } from '@/lib/supabase';
 import { Plus, Save, Trash2, Edit, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import AuthGuard from '@/components/AuthGuard';
 
-// صلاحيات افتراضية (يمكن استيرادها من قاعدة البيانات لاحقاً)
 interface Role {
   id: string;
   name: string;
@@ -25,60 +24,32 @@ export default function RolesPage() {
   const [roleName, setRoleName] = useState('');
   const [rolePermissions, setRolePermissions] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
-  const [fetchingPermissions, setFetchingPermissions] = useState(false);
-
-  // إنشاء عميل Supabase مع التوكن المخزن
-  const getSupabaseClient = () => {
-    const token = localStorage.getItem('auth_token');
-    return createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        global: {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
-        },
-      }
-    );
-  };
 
   const fetchRoles = async () => {
-    const supabase = getSupabaseClient();
-    const { data, error } = await supabase
-      .from('roles')
-      .select('*')
-      .order('name');
+    const supabase = createAuthenticatedClient();
+    const { data, error } = await supabase.from('roles').select('*').order('name');
     if (error) {
       console.error('Error fetching roles:', error);
       toast.error('فشل جلب الأدوار');
-      setRoles([]);
     } else {
       setRoles(data || []);
     }
   };
 
   const fetchPermissions = async () => {
-    setFetchingPermissions(true);
-    const supabase = getSupabaseClient();
-    const { data, error } = await supabase
-      .from('permissions')
-      .select('*')
-      .order('name');
+    const supabase = createAuthenticatedClient();
+    const { data, error } = await supabase.from('permissions').select('*').order('name');
     if (error) {
       console.error('Error fetching permissions:', error);
       toast.error('فشل جلب الصلاحيات');
-      setPermissions([]);
     } else {
       setPermissions(data || []);
     }
-    setFetchingPermissions(false);
   };
 
   const fetchRolePermissions = async (roleId: string) => {
-    const supabase = getSupabaseClient();
-    const { data, error } = await supabase
-      .from('role_permissions')
-      .select('permission_id')
-      .eq('role_id', roleId);
+    const supabase = createAuthenticatedClient();
+    const { data, error } = await supabase.from('role_permissions').select('permission_id').eq('role_id', roleId);
     if (error) {
       console.error('Error fetching role permissions:', error);
       setRolePermissions(new Set());
@@ -87,15 +58,8 @@ export default function RolesPage() {
     }
   };
 
-  const loadData = async () => {
-    setLoading(true);
-    await fetchRoles();
-    await fetchPermissions();
-    setLoading(false);
-  };
-
   useEffect(() => {
-    loadData();
+    Promise.all([fetchRoles(), fetchPermissions()]).finally(() => setLoading(false));
   }, []);
 
   const selectRole = async (role: Role) => {
@@ -104,16 +68,9 @@ export default function RolesPage() {
     await fetchRolePermissions(role.id);
   };
 
-  const togglePermission = (permId: string) => {
-    const newSet = new Set(rolePermissions);
-    if (newSet.has(permId)) newSet.delete(permId);
-    else newSet.add(permId);
-    setRolePermissions(newSet);
-  };
-
   const saveRolePermissions = async () => {
     if (!selectedRole) return;
-    const supabase = getSupabaseClient();
+    const supabase = createAuthenticatedClient();
     // حذف الصلاحيات القديمة
     const { error: deleteError } = await supabase
       .from('role_permissions')
@@ -129,9 +86,7 @@ export default function RolesPage() {
         role_id: selectedRole.id,
         permission_id: permId,
       }));
-      const { error: insertError } = await supabase
-        .from('role_permissions')
-        .insert(inserts);
+      const { error: insertError } = await supabase.from('role_permissions').insert(inserts);
       if (insertError) {
         toast.error('فشل حفظ الصلاحيات');
         return;
@@ -142,40 +97,32 @@ export default function RolesPage() {
 
   const updateRoleName = async () => {
     if (!selectedRole || !roleName.trim()) return;
-    const supabase = getSupabaseClient();
-    const { error } = await supabase
-      .from('roles')
-      .update({ name: roleName })
-      .eq('id', selectedRole.id);
+    const supabase = createAuthenticatedClient();
+    const { error } = await supabase.from('roles').update({ name: roleName }).eq('id', selectedRole.id);
     if (error) {
       toast.error('فشل تحديث اسم الدور');
     } else {
       toast.success('تم تحديث الاسم');
       setSelectedRole({ ...selectedRole, name: roleName });
-      await fetchRoles();
+      fetchRoles();
     }
   };
 
   const createRole = async () => {
-    const supabase = getSupabaseClient();
-    const { data, error } = await supabase
-      .from('roles')
-      .insert({ name: 'دور جديد' })
-      .select()
-      .single();
+    const supabase = createAuthenticatedClient();
+    const { data, error } = await supabase.from('roles').insert({ name: 'دور جديد' }).select().single();
     if (error) {
       toast.error('فشل إنشاء الدور');
     } else {
       toast.success('تم إنشاء الدور');
-      await fetchRoles();
-      selectRole(data);
+      fetchRoles();
+      if (data) selectRole(data);
     }
   };
 
   const deleteRole = async (id: string) => {
     if (!confirm('حذف هذا الدور؟')) return;
-    const supabase = getSupabaseClient();
-    // حذف صلاحيات الدور أولاً
+    const supabase = createAuthenticatedClient();
     await supabase.from('role_permissions').delete().eq('role_id', id);
     const { error } = await supabase.from('roles').delete().eq('id', id);
     if (error) {
@@ -183,7 +130,7 @@ export default function RolesPage() {
     } else {
       toast.success('تم حذف الدور');
       if (selectedRole?.id === id) setSelectedRole(null);
-      await fetchRoles();
+      fetchRoles();
     }
   };
 
@@ -210,7 +157,7 @@ export default function RolesPage() {
             <div className="bg-dark-100 rounded-xl border border-gray-800 p-4">
               <h2 className="text-lg font-bold text-white mb-3 flex items-center justify-between">
                 الأدوار
-                <button onClick={() => fetchRoles()} title="تحديث" className="text-gray-400 hover:text-white">
+                <button onClick={fetchRoles} title="تحديث" className="text-gray-400 hover:text-white">
                   <RefreshCw size={16} />
                 </button>
               </h2>
@@ -260,8 +207,7 @@ export default function RolesPage() {
                       <Save size={16} />
                     </button>
                   </div>
-                  <div className="mb-4 flex justify-between items-center">
-                    <h3 className="text-white font-bold">الصلاحيات</h3>
+                  <div className="mb-4 flex justify-end">
                     <button
                       onClick={saveRolePermissions}
                       className="px-3 py-1 rounded-lg bg-green-600 text-white text-sm"
@@ -269,35 +215,34 @@ export default function RolesPage() {
                       حفظ الصلاحيات
                     </button>
                   </div>
-                  {fetchingPermissions ? (
-                    <div className="flex justify-center py-8">
-                      <div className="w-6 h-6 border-2 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin" />
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-96 overflow-y-auto">
-                      {permissions.map(perm => (
-                        <label
-                          key={perm.id}
-                          className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-800 cursor-pointer"
-                        >
-                          <input
-                            type="checkbox"
-                            checked={rolePermissions.has(perm.id)}
-                            onChange={() => togglePermission(perm.id)}
-                            className="w-4 h-4 text-cyan-600 rounded border-gray-600 focus:ring-cyan-500"
-                          />
-                          <span className="text-gray-300 text-sm">
-                            {perm.description || perm.name}
-                          </span>
-                        </label>
-                      ))}
-                      {permissions.length === 0 && (
-                        <div className="text-gray-400 text-center py-4 col-span-2">
-                          لا توجد صلاحيات محددة بعد
-                        </div>
-                      )}
-                    </div>
-                  )}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-96 overflow-y-auto">
+                    {permissions.map(perm => (
+                      <label
+                        key={perm.id}
+                        className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-800 cursor-pointer"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={rolePermissions.has(perm.id)}
+                          onChange={() => {
+                            const newSet = new Set(rolePermissions);
+                            if (newSet.has(perm.id)) newSet.delete(perm.id);
+                            else newSet.add(perm.id);
+                            setRolePermissions(newSet);
+                          }}
+                          className="w-4 h-4 text-cyan-600 rounded border-gray-600 focus:ring-cyan-500"
+                        />
+                        <span className="text-gray-300 text-sm">
+                          {perm.description || perm.name}
+                        </span>
+                      </label>
+                    ))}
+                    {permissions.length === 0 && (
+                      <div className="text-gray-400 text-center py-4 col-span-2">
+                        لا توجد صلاحيات محددة بعد
+                      </div>
+                    )}
+                  </div>
                 </>
               ) : (
                 <p className="text-center text-gray-400 py-20">

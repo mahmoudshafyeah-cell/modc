@@ -1,9 +1,9 @@
-// src/app/dashboard/components/DashboardSidebar.tsx
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useApp } from '@/components/ThemeProvider';
+import { createAuthenticatedClient } from '@/lib/supabase';
 import {
   Home, Wallet, PlusCircle, FileText, Package, Shield,
   Code, TrendingUp, Menu, X, User, CreditCard, LogOut, Download,
@@ -185,6 +185,7 @@ export default function DashboardSidebar({ userData }: { userData?: UserData | n
   const userInitial = displayName.charAt(0);
   const isBalanceNegative = (user.balance || 0) < 0;
   const isAdmin = user.role === 'admin' || user.role === 'super_admin';
+
 
   const toggleSection = (id: string) => setOpenSections(prev => ({ ...prev, [id]: !prev[id] }));
 
