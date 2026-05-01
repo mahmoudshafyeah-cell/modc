@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useEffect, useRef } from 'react';
-import { Bell, X, CheckCheck, ExternalLink, Wallet, TrendingUp } from 'lucide-react';
+import { Bell, X, CheckCheck, ExternalLink, Wallet, TrendingUp, Crown, UserMinus } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
 
@@ -17,8 +17,8 @@ interface Notification {
 
 interface AgentTopbarProps {
   userData: any;
-  isSubAgent?: boolean; // للتمييز بين وكيل عادي ووكيل فرعي
-  onNavigateToVip?: () => void; // اختياري: للانتقال إلى تبويب VIP
+  isSubAgent?: boolean;
+  onNavigateToVip?: () => void;
 }
 
 export default function AgentTopbar({ userData, isSubAgent = false, onNavigateToVip }: AgentTopbarProps) {
@@ -30,7 +30,6 @@ export default function AgentTopbar({ userData, isSubAgent = false, onNavigateTo
   const [totalEarned, setTotalEarned] = useState<number | null>(null);
   const notifRef = useRef<HTMLDivElement>(null);
 
-  // إغلاق القائمة عند النقر خارجها
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (notifRef.current && !notifRef.current.contains(e.target as Node)) {
@@ -41,7 +40,6 @@ export default function AgentTopbar({ userData, isSubAgent = false, onNavigateTo
     return () => document.removeEventListener('mousedown', handler);
   }, [notifOpen]);
 
-  // جلب العدد غير المقروء كل 30 ثانية
   useEffect(() => {
     if (!userData?.id) return;
     fetchUnreadCount();
@@ -49,14 +47,12 @@ export default function AgentTopbar({ userData, isSubAgent = false, onNavigateTo
     return () => clearInterval(interval);
   }, [userData?.id]);
 
-  // جلب الرصيد والأرباح عند التحميل
   useEffect(() => {
     if (!userData?.id) return;
     fetchBalance();
     fetchTotalEarned();
   }, [userData?.id]);
 
-  // جلب الإشعارات عند الفتح
   useEffect(() => {
     if (notifOpen && userData?.id) {
       fetchNotifications();
@@ -165,7 +161,6 @@ export default function AgentTopbar({ userData, isSubAgent = false, onNavigateTo
 
   const handleNotificationClick = (n: Notification) => {
     markAsRead(n.id);
-    // تحديث الرصيد عند وجود إشعار مالي
     if (n.type === 'success' || n.type === 'warning') {
       fetchBalance();
       fetchTotalEarned();
@@ -178,16 +173,16 @@ export default function AgentTopbar({ userData, isSubAgent = false, onNavigateTo
 
   const displayName = userData?.full_name || userData?.email?.split('@')[0] || 'وكيل';
   const userInitial = displayName.charAt(0);
-  const accentColor = '#0c71b2'; // لون الوكيل
-
+  const accentColor = '#0c71b2';
   const roleLabel = isSubAgent ? 'وكيل فرعي' : 'وكيل معتمد';
 
   return (
-    <header className="h-16 flex items-center justify-between px-6 border-b flex-shrink-0"
-      style={{ background: 'rgba(10,10,20,0.95)', borderColor: `${accentColor}20`, backdropFilter: 'blur(10px)' }}>
-      
+    <header
+      className="h-16 flex items-center justify-between px-6 border-b flex-shrink-0"
+      style={{ background: 'rgba(10,10,20,0.95)', borderColor: `${accentColor}20`, backdropFilter: 'blur(10px)' }}
+    >
+      {/* الجهة اليمنى (في RTL) - زر VIP */}
       <div className="flex items-center gap-3">
-        {/* زر VIP اختياري (ينتقل إلى تبويب المستوى داخل الصفحة) */}
         {onNavigateToVip && (
           <button
             onClick={onNavigateToVip}
@@ -200,26 +195,37 @@ export default function AgentTopbar({ userData, isSubAgent = false, onNavigateTo
         )}
       </div>
 
+      {/* الجهة اليسرى (في RTL) - الرصيد والإشعارات والمستخدم */}
       <div className="flex items-center gap-3">
-        {/* عرض الرصيد الفعلي للمحفظة */}
+        {/* ✅ عرض الرصيد + أيقونة الوكيل بجانبه */}
         {balance !== null && (
-          <div className="flex items-center gap-1.5 px-3 h-9 rounded-xl text-xs font-semibold"
-            style={{ background: 'rgba(0,255,148,0.1)', border: '1px solid rgba(0,255,148,0.2)', color: '#00FF94' }}>
+          <div
+            className="flex items-center gap-1.5 px-3 h-9 rounded-xl text-xs font-semibold"
+            style={{ background: 'rgba(0,255,148,0.1)', border: '1px solid rgba(0,255,148,0.2)', color: '#00FF94' }}
+          >
             <Wallet size={14} className="text-green-400" />
             <span>${balance.toFixed(2)}</span>
+            {/* أيقونة الوكيل بجانب الرصيد مباشرة */}
+            {isSubAgent ? (
+              <UserMinus size={12} className="text-cyan-400 mr-0.5" />
+            ) : (
+              <Crown size={12} className="text-yellow-400 mr-0.5" />
+            )}
           </div>
         )}
 
-        {/* عرض إجمالي الأرباح إن وجدت */}
+        {/* عرض إجمالي الأرباح إن وجد */}
         {totalEarned !== null && (
-          <div className="flex items-center gap-1.5 px-3 h-9 rounded-xl text-xs font-semibold"
-            style={{ background: 'rgba(12, 113, 178, 0.1)', border: '1px solid rgba(12, 113, 178, 0.2)', color: '#00D4FF' }}>
+          <div
+            className="flex items-center gap-1.5 px-3 h-9 rounded-xl text-xs font-semibold"
+            style={{ background: 'rgba(12, 113, 178, 0.1)', border: '1px solid rgba(12, 113, 178, 0.2)', color: '#00D4FF' }}
+          >
             <TrendingUp size={14} />
             <span>${totalEarned.toFixed(2)}</span>
           </div>
         )}
 
-        {/* الإشعارات */}
+        {/* زر الإشعارات */}
         <div className="relative" ref={notifRef}>
           <button
             onClick={() => setNotifOpen(o => !o)}
@@ -228,18 +234,24 @@ export default function AgentTopbar({ userData, isSubAgent = false, onNavigateTo
           >
             <Bell size={16} style={{ color: accentColor }} />
             {unreadCount > 0 && (
-              <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold text-white bg-red-500"
-                style={{ fontSize: '10px' }}>
+              <span
+                className="absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold text-white bg-red-500"
+                style={{ fontSize: '10px' }}
+              >
                 {unreadCount > 99 ? '99+' : unreadCount}
               </span>
             )}
           </button>
 
           {notifOpen && (
-            <div className="absolute top-full left-0 mt-2 w-80 max-h-96 overflow-y-auto rounded-2xl z-50 animate-slide-up"
-              style={{ background: '#111128', border: `1px solid ${accentColor}40`, boxShadow: '0 16px 48px rgba(0,0,0,0.8)' }}>
+            <div
+              className="absolute top-full left-0 mt-2 w-80 max-h-96 overflow-y-auto rounded-2xl z-50 animate-slide-up"
+              style={{ background: '#111128', border: `1px solid ${accentColor}40`, boxShadow: '0 16px 48px rgba(0,0,0,0.8)' }}
+            >
               <div className="flex items-center justify-between p-4 border-b" style={{ borderColor: `${accentColor}20` }}>
-                <button onClick={() => setNotifOpen(false)} className="text-gray-400 hover:text-white"><X size={16} /></button>
+                <button onClick={() => setNotifOpen(false)} className="text-gray-400 hover:text-white">
+                  <X size={16} />
+                </button>
                 <h4 className="text-sm font-bold text-white">الإشعارات</h4>
               </div>
               <div className="divide-y" style={{ divideColor: `${accentColor}10` }}>
@@ -249,7 +261,8 @@ export default function AgentTopbar({ userData, isSubAgent = false, onNavigateTo
                   <div className="p-4 text-center text-gray-400">لا توجد إشعارات</div>
                 ) : (
                   notifications.map(n => (
-                    <div key={n.id}
+                    <div
+                      key={n.id}
                       onClick={() => handleNotificationClick(n)}
                       className={`p-4 text-right transition-colors hover:bg-cyan-500/10 cursor-pointer ${!n.read ? 'bg-cyan-500/5' : ''}`}
                     >
@@ -276,7 +289,10 @@ export default function AgentTopbar({ userData, isSubAgent = false, onNavigateTo
                 )}
               </div>
               <div className="p-3 text-center border-t" style={{ borderColor: `${accentColor}10` }}>
-                <button onClick={markAllAsRead} className="flex items-center gap-1.5 mx-auto text-xs text-cyan-400 hover:text-cyan-300 transition-colors font-semibold">
+                <button
+                  onClick={markAllAsRead}
+                  className="flex items-center gap-1.5 mx-auto text-xs text-cyan-400 hover:text-cyan-300 transition-colors font-semibold"
+                >
                   <CheckCheck size={13} />
                   تحديد الكل كمقروء
                 </button>
@@ -285,16 +301,20 @@ export default function AgentTopbar({ userData, isSubAgent = false, onNavigateTo
           )}
         </div>
 
-        {/* معلومات الوكيل */}
-        <Link href="/agent-dashboard"
+        {/* معلومات المستخدم */}
+        <Link
+          href="/agent-dashboard"
           className="flex items-center gap-2 px-3 h-9 rounded-xl transition-all duration-200 hover:bg-cyan-500/10"
-          style={{ border: `1px solid ${accentColor}30` }}>
+          style={{ border: `1px solid ${accentColor}30` }}
+        >
           <div className="text-right hidden sm:block">
             <p className="text-xs font-bold text-white leading-none">{displayName}</p>
             <p className="text-xs text-gray-500">{roleLabel}</p>
           </div>
-          <div className="w-7 h-7 rounded-lg flex items-center justify-center text-sm font-bold"
-            style={{ background: `linear-gradient(135deg, ${accentColor}, #00D4FF)`, color: 'white' }}>
+          <div
+            className="w-7 h-7 rounded-lg flex items-center justify-center text-sm font-bold"
+            style={{ background: `linear-gradient(135deg, ${accentColor}, #00D4FF)`, color: 'white' }}
+          >
             {userInitial}
           </div>
         </Link>
