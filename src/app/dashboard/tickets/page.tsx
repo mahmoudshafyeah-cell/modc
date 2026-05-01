@@ -1,100 +1,139 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { supabase } from '@/lib/supabase';
+import { RefreshCw, Send } from 'lucide-react';
 import { toast } from 'sonner';
-import Link from 'next/link';
+import AuthGuard from '@/components/AuthGuard';
 
 interface Ticket {
   id: string;
+  user_id: string;
+  user_email: string;
   subject: string;
-  status: string;
+  description: string;
+  status: 'open' | 'in_progress' | 'closed';
   created_at: string;
-  profiles: {
-    full_name: string | null;
-    email: string;
-  };
 }
 
-export default function AdminTicketsPage() {
-  const [tickets, setTickets] = useState<Ticket[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState('all');
+interface Reply {
+  id: string;
+  ticket_id: string;
+  message: string;
+  is_staff: boolean;
+  created_at: string;
+}
 
-  const fetchTickets = async () => {
-    try {
-      const token = localStorage.getItem('auth_token');
-      const url = new URL('/api/admin/tickets', window.location.origin);
-      if (statusFilter !== 'all') url.searchParams.set('status', statusFilter);
-      const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
-      setTickets(data.tickets);
-    } catch (error: any) {
-      toast.error(error.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+export default function TicketsPage() {
+  const [tickets, setTickets] = useState<Ticket[]>([]);
+  const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
+  const [replies, setReplies] = useState<Reply[]>([]);
+  const [replyMessage, setReplyMessage] = useState('');
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchTickets();
-  }, [statusFilter]);
+  }, []);
 
-  const statusLabels: Record<string, string> = {
-    open: 'مفتوحة',
-    in_progress: 'قيد المعالجة',
-    resolved: 'تم الحل',
-    closed: 'مغلقة',
+  async function fetchTickets() {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from('support_tickets')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (error) toast.error('فشل جلب التذاكر');
+    else setTickets(data || []);
+    setLoading(false);
+  }
+
+  async function fetchReplies(ticketId: string) {
+    const { data } = await supabase
+      .from('ticket_replies')
+      .select('*')
+      .eq('ticket_id', ticketId)
+      .order('created_at', { ascending: true });
+    setReplies(data || []);
+  }
+
+  const selectTicket = (ticket: Ticket) => {
+    setSelectedTicket(ticket);
+    fetchReplies(ticket.id);
   };
 
-  if (loading) return <div className="p-6 text-gray-400">جاري التحميل...</div>;
+  async function sendReply() {
+    if (!replyMessage.trim() || !selectedTicket) return;
+    const { error } = await supabase.from('ticket_replies').insert({
+      ticket_id: selectedTicket.id,
+      message: replyMessage,
+      is_staff: true,
+    });
+    if (error) toast.error('فشل إرسال الرد');
+    else {
+      toast.success('تم إرسال الرد');
+      setReplyMessage('');
+      fetchReplies(selectedTicket.id);
+    }
+  }
+
+  async function updateTicketStatus(ticketId: string, status: string) {
+    const { error } = await supabase
+      .from('support_tickets')
+      .update({ status })
+      .eq('id', ticketId);
+    if (error) toast.error('فشل تحديث الحالة');
+    else {
+      toast.success('تم تحديث الحالة');
+      fetchTickets();
+      if (selectedTicket?.id === ticketId) setSelectedTicket({ ...selectedTicket, status: status as any });
+    }
+  }
 
   return (
-    <div className="p-6" dir="rtl">
-      <h1 className="text-2xl font-bold text-white mb-6">إدارة التذاكر</h1>
-      <div className="flex gap-2 mb-4">
-        {['all', 'open', 'in_progress', 'resolved', 'closed'].map((s) => (
-          <button
-            key={s}
-            onClick={() => setStatusFilter(s)}
-            className={`px-4 py-2 rounded-lg ${statusFilter === s ? 'bg-violet-600 text-white' : 'bg-dark-100 text-gray-400'}`}
-          >
-            {s === 'all' ? 'الكل' : statusLabels[s]}
-          </button>
-        ))}
-      </div>
-      <div className="rounded-2xl bg-dark-100 border border-gray-700 overflow-x-auto">
-        <table className="w-full text-right">
-          <thead className="border-b border-gray-700">
-            <tr>
-              <th className="p-4 text-gray-400">المستخدم</th>
-              <th className="p-4 text-gray-400">الموضوع</th>
-              <th className="p-4 text-gray-400">الحالة</th>
-              <th className="p-4 text-gray-400">التاريخ</th>
-              <th className="p-4 text-gray-400">إجراءات</th>
-            </tr>
-          </thead>
-          <tbody>
-            {tickets.map(ticket => (
-              <tr key={ticket.id} className="border-b border-gray-800">
-                <td className="p-4 text-white">{ticket.profiles?.full_name || ticket.profiles?.email}</td>
-                <td className="p-4 text-white">{ticket.subject}</td>
-                <td className="p-4">
-                  <span className={`px-2 py-1 rounded-lg text-xs ${
-                    ticket.status === 'open' ? 'bg-green-600/20 text-green-400' :
-                    ticket.status === 'in_progress' ? 'bg-amber-600/20 text-amber-400' :
-                    'bg-gray-600/20 text-gray-400'
-                  }`}>{statusLabels[ticket.status]}</span>
-                </td>
-                <td className="p-4 text-gray-300">{new Date(ticket.created_at).toLocaleDateString('ar-SY')}</td>
-                <td className="p-4">
-                  <Link href={`/dashboard/tickets/${ticket.id}`} className="text-violet-400 hover:underline">عرض</Link>
-                </td>
-              </tr>
+    <AuthGuard allowedRoles={['admin', 'super_admin']} redirectTo="/dashboard">
+      <div dir="rtl" className="p-6 space-y-6">
+        <div className="flex justify-between items-center">
+          <h1 className="text-2xl font-bold text-white">الدعم الفني (التذاكر)</h1>
+          <button onClick={fetchTickets} className="p-2 rounded-xl bg-gray-700 hover:bg-gray-600"><RefreshCw size={18} /></button>
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-1 bg-dark-100 rounded-xl border border-gray-800 p-4 max-h-[70vh] overflow-y-auto">
+            <h2 className="text-lg font-bold text-white mb-3">التذاكر</h2>
+            {tickets.map(t => (
+              <div key={t.id} onClick={() => selectTicket(t)} className={`p-3 rounded-lg cursor-pointer mb-2 ${selectedTicket?.id === t.id ? 'bg-cyan-600/20 border-r-2 border-cyan-400' : 'hover:bg-gray-800'}`}>
+                <div className="flex justify-between"><span className="font-bold text-white">{t.subject}</span><span className="text-xs text-gray-400">{t.status}</span></div>
+                <p className="text-gray-400 text-sm">{t.user_email}</p>
+              </div>
             ))}
-          </tbody>
-        </table>
-        {tickets.length === 0 && <p className="p-4 text-gray-400 text-center">لا توجد تذاكر</p>}
+          </div>
+          <div className="lg:col-span-2 bg-dark-100 rounded-xl border border-gray-800 p-4">
+            {selectedTicket ? (
+              <>
+                <div className="border-b border-gray-700 pb-3 mb-4">
+                  <div className="flex justify-between items-center">
+                    <h2 className="text-xl font-bold text-white">{selectedTicket.subject}</h2>
+                    <select value={selectedTicket.status} onChange={e => updateTicketStatus(selectedTicket.id, e.target.value)} className="p-1 rounded bg-gray-800 text-white border border-gray-700">
+                      <option value="open">مفتوحة</option><option value="in_progress">قيد المعالجة</option><option value="closed">مغلقة</option>
+                    </select>
+                  </div>
+                  <p className="text-gray-400 mt-2">{selectedTicket.description}</p>
+                  <p className="text-gray-500 text-xs mt-1">من: {selectedTicket.user_email} - {new Date(selectedTicket.created_at).toLocaleString('ar-SY')}</p>
+                </div>
+                <div className="space-y-3 max-h-[300px] overflow-y-auto">
+                  {replies.map(r => (
+                    <div key={r.id} className={`p-3 rounded-lg ${r.is_staff ? 'bg-cyan-600/10 border-r-2 border-cyan-400' : 'bg-gray-800'}`}>
+                      <div className="flex justify-between"><span className="font-bold text-white">{r.is_staff ? 'الدعم الفني' : 'العميل'}</span><span className="text-xs text-gray-400">{new Date(r.created_at).toLocaleString('ar-SY')}</span></div>
+                      <p className="text-gray-300 mt-1">{r.message}</p>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-4 flex gap-2">
+                  <textarea value={replyMessage} onChange={e => setReplyMessage(e.target.value)} placeholder="اكتب ردك..." className="flex-1 p-2 rounded-lg bg-gray-800 text-white border border-gray-700" rows={2}></textarea>
+                  <button onClick={sendReply} className="px-4 py-2 rounded-xl bg-cyan-600 text-white flex items-center gap-2"><Send size={16} /> إرسال</button>
+                </div>
+              </>
+            ) : <p className="text-center text-gray-400 py-20">اختر تذكرة من القائمة</p>}
+          </div>
+        </div>
       </div>
-    </div>
+    </AuthGuard>
   );
 }
