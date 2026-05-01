@@ -8,8 +8,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Eye, EyeOff, Mail, Lock } from "lucide-react";
 import { toast } from "sonner";
-import { createClient } from '@supabase/supabase-js';
-import { jwtDecode } from 'jwt-decode';
+import { supabase } from "@/lib/supabase"; // ✅ استخدم العميل الجاهز
+import { jwtDecode } from "jwt-decode";
 
 const loginSchema = z.object({
   email: z.string().email("يرجى إدخال بريد إلكتروني صالح"),
@@ -36,11 +36,7 @@ export default function LoginForm() {
   const onSubmit = async (data: LoginFormValues) => {
     setIsLoading(true);
     try {
-      // 1. تسجيل الدخول مباشرة عبر Supabase Auth
-      const supabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      );
+      // 1. تسجيل الدخول مباشرة عبر Supabase Auth باستخدام العميل الجاهز
       const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
         email: data.email,
         password: data.password,
@@ -62,27 +58,23 @@ export default function LoginForm() {
       // تخزين التوكن
       localStorage.setItem('auth_token', session.access_token);
 
-      // 2. جلب دور المستخدم من جدول profiles (باستخدام service role key أو ثاني)
-      const supabaseAdmin = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.SUPABASE_SERVICE_ROLE_KEY!
-      );
-      const { data: profile, error: profileError } = await supabaseAdmin
-        .from('profiles')
-        .select('role')
-        .eq('id', authData.user.id)
-        .single();
-
+      // 2. جلب دور المستخدم من جدول profiles (باستخدام supabase العادي – لكن بعد تسجيل الدخول سيكون التوكن مضمنًا)
+      // نستخدم supabase.admin مباشرة؟ الأسهل: نستدعي API مخصص لجلب الدور حتى لا نضطر لاستخدام service role.
+      // بدلاً من ذلك، يمكننا قراءة الدور من التوكن إذا كان مضمنًا في user_metadata.
+      // لنحاول أولاً قراءة الدور من التوكن:
       let role = 'customer';
-      if (profileError) {
-        console.error('Failed to fetch profile role:', profileError);
-        // محاولة قراءة الدور من التوكن (إذا كان موجوداً)
+      try {
+        const decoded: any = jwtDecode(session.access_token);
+        role = decoded.role || decoded.user_metadata?.role || 'customer';
+      } catch {
+        // إذا لم نستطع فك التوكن، نستخدم طريقة احتياطية: جلب الدور من profiles عبر API بسيط
         try {
-          const decoded: any = jwtDecode(session.access_token);
-          role = decoded.role || decoded.user_metadata?.role || 'customer';
+          const res = await fetch('/api/user/role', {
+            headers: { Authorization: `Bearer ${session.access_token}` }
+          });
+          const roleData = await res.json();
+          if (res.ok && roleData.role) role = roleData.role;
         } catch {}
-      } else {
-        role = profile.role;
       }
 
       // 3. تحديد مسار التوجيه
@@ -141,7 +133,7 @@ export default function LoginForm() {
       </div>
 
       <button type="submit" disabled={isLoading} className="w-full rounded-lg bg-blue-600 py-2.5 text-center text-sm font-medium text-white transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-70">
-        {isLoading ? "جاري التأكد من الحساب" : "تسجيل الدخول"}
+        {isLoading ? "جاري تسجيل الدخول..." : "تسجيل الدخول"}
       </button>
     </form>
   );
