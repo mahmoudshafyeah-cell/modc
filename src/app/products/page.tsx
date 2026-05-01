@@ -3,55 +3,28 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Search, Zap, Menu, X, User, LogIn, UserPlus, Home, HelpCircle, Facebook, Instagram, Twitter, Phone, Mail, Crown, Star } from 'lucide-react';
 import { jwtDecode } from 'jwt-decode';
 import { toast } from 'sonner';
+import { Search, Zap, Menu, X, Home, HelpCircle, LogIn, UserPlus, Facebook, Phone, Mail, ChevronRight } from 'lucide-react';
 
-// مكونات البانر والشريط الإخباري (تأكد من وجودها)
+// مكونات الصفحة العامة
 import ProductBanner from './components/ProductBanner';
 import TickerBar from './components/TickerBar';
 
-// الشريط الجانبي الخاص بالزوار
-function GuestSidebar({ onClose }: { onClose: () => void }) {
-  const router = useRouter();
-  const whatsappNumber = '966512345678'; // استبدل برقم الواتساب الحقيقي من الإعدادات
+// مكونات الأدوار (يتم استيرادها مرة واحدة في الأعلى)
+import DashboardSidebar from '@/app/dashboard/components/DashboardSidebar'; // للمدير
+import AgentSidebar from '@/app/(main)/agent-dashboard/components/AgentSidebar';
+import CustomerSidebar from '@/app/(main)/customer-dashboard/components/DashboardSidebar';
+import AgentTopbar from '@/app/(main)/agent-dashboard/components/AgentTopbar';
+import CustomerTopbar from '@/app/(main)/customer-dashboard/components/DashboardTopbar';
 
-  return (
-    <div className="flex flex-col h-full">
-      <div className="flex justify-between items-center p-4 border-b border-gray-700">
-        <h2 className="text-xl font-bold text-white">القائمة</h2>
-        <button onClick={onClose} className="text-gray-400 hover:text-white">
-          <X size={24} />
-        </button>
-      </div>
-      <div className="flex-1 p-4 space-y-3">
-        <Link href="/" className="flex items-center gap-3 p-3 rounded-xl text-gray-300 hover:bg-gray-800 transition">
-          <Home size={20} /> الرئيسية
-        </Link>
-        <Link href="/sign-up-login-screen" className="flex items-center gap-3 p-3 rounded-xl text-gray-300 hover:bg-gray-800 transition">
-          <LogIn size={20} /> تسجيل الدخول
-        </Link>
-        <Link href="/sign-up-login-screen?tab=signup" className="flex items-center gap-3 p-3 rounded-xl text-gray-300 hover:bg-gray-800 transition">
-          <UserPlus size={20} /> إنشاء حساب
-        </Link>
-        <Link href="/legal/about" className="flex items-center gap-3 p-3 rounded-xl text-gray-300 hover:bg-gray-800 transition">
-          <HelpCircle size={20} /> من نحن
-        </Link>
-        <a href={`https://wa.me/${whatsappNumber}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-3 rounded-xl text-green-400 hover:bg-gray-800 transition">
-          <Phone size={20} /> الدعم الفني (واتساب)
-        </a>
-      </div>
-      <div className="p-4 border-t border-gray-700 text-center text-gray-500 text-xs">
-        <p>© 2025 MODC - جميع الحقوق محفوظة</p>
-        <div className="flex justify-center gap-4 mt-2">
-          <a href="#" className="hover:text-cyan-400"><Facebook size={16} /></a>
-          <a href="#" className="hover:text-cyan-400"><Instagram size={16} /></a>
-          <a href="#" className="hover:text-cyan-400"><Twitter size={16} /></a>
-        </div>
-      </div>
-    </div>
-  );
-}
+// مكون Topbar بسيط للمدير في صفحة المنتجات (يمكن تخصيصه)
+const AdminTopbar = ({ userData }: { userData: any }) => (
+  <header className="h-16 flex items-center justify-between px-6 border-b border-gray-800 bg-dark-100/50 backdrop-blur-sm">
+    <div></div>
+    <div className="text-white font-medium">مرحباً {userData?.full_name || userData?.email?.split('@')[0] || 'مدير'}</div>
+  </header>
+);
 
 interface UserData {
   id: string;
@@ -70,14 +43,19 @@ export default function ProductsPage() {
   const [loading, setLoading] = useState(true);
   const [sortBy, setSortBy] = useState<'default' | 'price-asc' | 'price-desc'>('default');
   const [userData, setUserData] = useState<UserData | null>(null);
+  const [isSubAgent, setIsSubAgent] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
+  // استخراج التوكن والمستخدم
   useEffect(() => {
     const token = localStorage.getItem('auth_token');
     if (token) {
       try {
         const decoded = jwtDecode<UserData>(token);
         setUserData(decoded);
+        if (decoded.role === 'agent') {
+          checkIfSubAgent(decoded.id);
+        }
         fetchUserBalance(decoded.id);
       } catch {}
     }
@@ -92,6 +70,17 @@ export default function ProductsPage() {
     const token = localStorage.getItem('auth_token');
     return token ? { 'Authorization': `Bearer ${token}` } : {};
   };
+
+  async function checkIfSubAgent(userId: string) {
+    try {
+      const token = localStorage.getItem('auth_token');
+      const res = await fetch(`/api/agent/is-sub-agent?userId=${userId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (res.ok) setIsSubAgent(data.isSubAgent);
+    } catch {}
+  }
 
   async function fetchUserBalance(userId: string) {
     try {
@@ -134,6 +123,7 @@ export default function ProductsPage() {
     router.push('/sign-up-login-screen');
   };
 
+  // تصفية وترتيب
   let filtered = products.filter(p => !search || p.name?.toLowerCase().includes(search.toLowerCase()));
   if (sortBy === 'price-asc') filtered.sort((a, b) => a.price - b.price);
   if (sortBy === 'price-desc') filtered.sort((a, b) => b.price - a.price);
@@ -143,36 +133,31 @@ export default function ProductsPage() {
     ...categories.map(c => ({ id: c.id, label: `${c.icon || '📁'} ${c.name_ar || c.name}` }))
   ];
 
-  // المحتوى الرئيسي (المنتجات والفلاتر) مع تصميم جديد
+  // محتوى المنتجات الرئيسي (مستخدم عبر جميع الأدوار)
   const mainContent = (
     <div className="space-y-8">
-      {/* البانر */}
-      <div className="relative rounded-2xl overflow-hidden shadow-2xl">
-        <ProductBanner />
-      </div>
-
-      {/* الشريط الإخباري */}
+      <ProductBanner />
       <TickerBar />
 
-      {/* رأس الصفحة */}
+      {/* رأس الصفحة مع بحث وترتيب */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <h1 className="text-3xl font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
+        <h1 className="text-3xl font-black bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
           منتجاتنا
         </h1>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-3">
           <div className="relative">
-            <Search size={18} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <Search size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
             <input
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="ابحث عن منتج..."
-              className="w-full md:w-64 pr-10 py-2.5 rounded-xl bg-gray-800/50 border border-gray-700 text-white text-sm focus:outline-none focus:border-cyan-500 transition"
+              className="w-64 pr-9 py-2.5 rounded-xl bg-gray-800/50 border border-gray-700 text-white text-sm focus:border-cyan-500 transition"
             />
           </div>
           <select
             value={sortBy}
             onChange={e => setSortBy(e.target.value as any)}
-            className="px-4 py-2.5 rounded-xl bg-gray-800/50 border border-gray-700 text-white text-sm focus:outline-none focus:border-cyan-500"
+            className="px-4 py-2.5 rounded-xl bg-gray-800/50 border border-gray-700 text-white text-sm focus:border-cyan-500"
           >
             <option value="default">الافتراضي</option>
             <option value="price-asc">السعر: من الأقل إلى الأعلى</option>
@@ -182,14 +167,14 @@ export default function ProductsPage() {
       </div>
 
       {/* أزرار التصنيفات */}
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-2 pb-2 overflow-x-auto">
         {filterTabs.map(tab => (
           <button
             key={tab.id}
             onClick={() => setActiveFilter(tab.id)}
-            className={`px-5 py-2 rounded-full text-sm font-medium transition-all ${
+            className={`px-5 py-2 rounded-xl text-sm font-semibold transition-all shadow-sm ${
               activeFilter === tab.id
-                ? 'bg-cyan-600 text-white shadow-lg'
+                ? 'bg-cyan-600 text-white shadow-cyan-500/30'
                 : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
             }`}
           >
@@ -198,37 +183,39 @@ export default function ProductsPage() {
         ))}
       </div>
 
-      {/* عرض المنتجات */}
+      {/* شبكة المنتجات */}
       {loading ? (
-        <div className="flex justify-center py-16">
-          <div className="w-12 h-12 border-4 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin" />
+        <div className="flex justify-center py-20">
+          <div className="w-10 h-10 border-3 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin" />
         </div>
       ) : filtered.length === 0 ? (
-        <div className="text-center py-16 bg-gray-800/30 rounded-2xl">
-          <div className="text-6xl mb-4">🔍</div>
+        <div className="text-center py-20 bg-gray-800/30 rounded-2xl">
+          <div className="text-6xl mb-3">🔍</div>
           <h3 className="text-xl font-bold text-white">لا توجد منتجات</h3>
-          <p className="text-gray-400">حاول تغيير معايير البحث</p>
+          <p className="text-gray-400 mt-1">حاول البحث بكلمات مختلفة</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-7">
           {filtered.map(product => (
             <Link
               key={product.id}
               href={`/products/${product.id}`}
-              className="group rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl bg-gray-800/40 backdrop-blur-sm border border-gray-700 hover:border-cyan-500/50"
+              className="group bg-gradient-to-b from-gray-800/80 to-gray-900/80 rounded-2xl overflow-hidden backdrop-blur-sm border border-gray-700/50 hover:border-cyan-500/50 transition-all duration-300 hover:-translate-y-2 hover:shadow-xl hover:shadow-cyan-500/10"
             >
-              <div className="h-48 flex items-center justify-center text-7xl bg-gradient-to-br from-gray-700/50 to-gray-800/50">
-                {product.image || product.emoji || '📦'}
+              <div className="h-44 flex items-center justify-center text-6xl bg-gradient-to-br from-cyan-900/20 to-blue-900/20 group-hover:scale-105 transition-transform duration-300">
+                {product.image || product.emoji || '🎁'}
               </div>
               <div className="p-5">
-                <h3 className="font-bold text-white text-lg group-hover:text-cyan-400 transition">
-                  {product.name}
-                </h3>
+                <h3 className="font-bold text-white text-lg line-clamp-1">{product.name}</h3>
                 <div className="flex items-center justify-between mt-3">
-                  <span className="text-2xl font-black text-white">${product.price}</span>
-                  <span className="flex items-center gap-1 text-xs text-cyan-400 bg-cyan-500/10 px-2 py-1 rounded-full">
-                    <Zap size={12} />
-                    {product.delivery_time || 'فوري'}
+                  <div>
+                    <span className="text-2xl font-black text-cyan-400">${product.price}</span>
+                    {product.oldPrice && (
+                      <span className="text-sm text-gray-500 line-through mr-2">${product.oldPrice}</span>
+                    )}
+                  </div>
+                  <span className="flex items-center gap-1 text-xs bg-cyan-500/10 px-2 py-1 rounded-full text-cyan-400">
+                    <Zap size={12} /> {product.delivery_time || 'فوري'}
                   </span>
                 </div>
               </div>
@@ -239,36 +226,64 @@ export default function ProductsPage() {
     </div>
   );
 
-  // إذا كان المستخدم غير مسجل -> عرض شريط جانبي خاص بالزوار
+  // إذا لم يكن المستخدم مسجلاً : نعرض شريطاً جانبياً خاصاً للزائر بأزرار جميلة
   if (!userData) {
+    const whatsappNumber = localStorage.getItem('p2p_whatsapp') || '963964785125';
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900" dir="rtl">
+      <div className="min-h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950" dir="rtl">
         {/* زر فتح القائمة الجانبية */}
         <button
           onClick={() => setMobileSidebarOpen(true)}
-          className="fixed top-4 right-4 z-50 p-3 rounded-full bg-gray-800/80 backdrop-blur-sm shadow-lg border border-gray-700 md:hidden"
+          className="fixed top-5 right-5 z-50 p-2.5 rounded-xl bg-gray-800/80 backdrop-blur-md shadow-lg border border-gray-700 md:hidden"
         >
-          <Menu size={24} className="text-white" />
+          <Menu size={22} className="text-white" />
         </button>
 
-        {/* القائمة الجانبية المنبثقة للموبايل */}
+        {/* نافذة القائمة الجانبية للموبايل */}
         {mobileSidebarOpen && (
           <div className="fixed inset-0 z-50 md:hidden">
             <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setMobileSidebarOpen(false)} />
-            <div className="absolute top-0 right-0 bottom-0 w-80 bg-gray-900 shadow-xl overflow-y-auto border-l border-gray-700">
-              <GuestSidebar onClose={() => setMobileSidebarOpen(false)} />
+            <div className="absolute top-0 right-0 bottom-0 w-80 bg-gray-900 shadow-2xl border-l border-gray-700 overflow-y-auto">
+              <div className="p-4 border-b border-gray-700 flex justify-between items-center">
+                <span className="text-white font-bold text-lg">القائمة</span>
+                <button onClick={() => setMobileSidebarOpen(false)} className="p-2 rounded-lg bg-gray-800"><X size={18} /></button>
+              </div>
+              <div className="p-4 space-y-3">
+                <Link href="/" className="flex items-center gap-3 p-3 rounded-xl bg-gray-800/50 text-gray-200 hover:bg-gray-700 transition"><Home size={18} /> الرئيسية</Link>
+                <Link href="/sign-up-login-screen" className="flex items-center gap-3 p-3 rounded-xl bg-cyan-600 text-white hover:bg-cyan-700 transition"><LogIn size={18} /> تسجيل الدخول</Link>
+                <Link href="/sign-up-login-screen?tab=signup" className="flex items-center gap-3 p-3 rounded-xl bg-gray-800 text-white hover:bg-gray-700 transition"><UserPlus size={18} /> إنشاء حساب جديد</Link>
+                <Link href="/legal/about" className="flex items-center gap-3 p-3 rounded-xl bg-gray-800/50 text-gray-200 hover:bg-gray-700 transition"><HelpCircle size={18} /> من نحن</Link>
+                <a href={`https://wa.me/${whatsappNumber}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-3 rounded-xl bg-green-600/20 text-green-400 hover:bg-green-600/30 transition"><Phone size={18} /> الدعم الفني (واتساب)</a>
+              </div>
             </div>
           </div>
         )}
 
-        {/* تخطيط سطح المكتب: شريط جانبي ثابت على اليمين */}
+        {/* تخطيط الصفحة لغير المسجلين: شريط جانبي ثابت على سطح المكتب */}
         <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex flex-col lg:flex-row gap-8">
+            {/* الشريط الجانبي للزائر (يظهر على الشاشات الكبيرة) */}
             <aside className="hidden lg:block lg:w-80 flex-shrink-0">
-              <div className="sticky top-6 rounded-2xl bg-gray-800/50 backdrop-blur-sm border border-gray-700 overflow-hidden shadow-xl">
-                <GuestSidebar onClose={() => {}} />
+              <div className="sticky top-24 rounded-2xl bg-gray-800/40 backdrop-blur-md border border-gray-700/50 shadow-xl overflow-hidden">
+                <div className="p-6 text-center border-b border-gray-700/50">
+                  <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-3xl font-bold text-white shadow-lg">M</div>
+                  <h3 className="text-xl font-bold text-white mt-3">مرحباً بك</h3>
+                  <p className="text-gray-400 text-sm mt-1">سجل دخولك للاستمتاع بتجربة شراء أفضل</p>
+                </div>
+                <div className="p-5 space-y-3">
+                  <Link href="/sign-up-login-screen" className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-cyan-600 text-white font-bold hover:bg-cyan-700 transition"><LogIn size={18} /> تسجيل الدخول</Link>
+                  <Link href="/sign-up-login-screen?tab=signup" className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-gray-700 text-white font-bold hover:bg-gray-600 transition"><UserPlus size={18} /> إنشاء حساب جديد</Link>
+                  <Link href="/legal/about" className="flex items-center gap-3 p-3 rounded-xl text-gray-300 hover:bg-gray-800 transition"><HelpCircle size={18} /> من نحن</Link>
+                  <Link href="/" className="flex items-center gap-3 p-3 rounded-xl text-gray-300 hover:bg-gray-800 transition"><Home size={18} /> الصفحة الرئيسية</Link>
+                  <a href={`https://wa.me/${whatsappNumber}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-3 rounded-xl text-green-400 hover:bg-green-900/20 transition"><Phone size={18} /> الدعم الفني (واتساب)</a>
+                </div>
+                <div className="p-4 text-center text-xs text-gray-500 border-t border-gray-700/50">
+                  <Facebook size={14} className="inline ml-1" /> تابعنا على فيسبوك
+                </div>
               </div>
             </aside>
+
+            {/* المحتوى الرئيسي */}
             <main className="flex-1 min-w-0">
               {mainContent}
             </main>
@@ -278,45 +293,37 @@ export default function ProductsPage() {
     );
   }
 
-  // إذا كان المستخدم مسجلاً -> نعرض واجهة حسب دوره (كما في السابق لكن مع تحسين التصميم)
-  // يمكن استخدام نفس الـ Sidebars السابقة أو نخصصها بشكل أنيق أيضاً. سنبقيها بسيطة.
-  // لكن للاختصار سنعيد استخدام المكونات الموجودة:
-
-  // استيراد المكونات الخاصة بالأدوار
-  import DashboardSidebar from '@/app/dashboard/components/DashboardSidebar';
-  import AgentSidebar from '@/app/(main)/agent-dashboard/components/AgentSidebar';
-  import CustomerSidebar from '@/app/(main)/customer-dashboard/components/DashboardSidebar';
-  import AgentTopbar from '@/app/(main)/agent-dashboard/components/AgentTopbar';
-  import CustomerTopbar from '@/app/(main)/customer-dashboard/components/DashboardTopbar';
-
+  // اختيار المكونات حسب دور المستخدم (للمسجلين)
   let SidebarComponent;
   let TopbarComponent;
-  let sidebarProps = { userData };
+  let sidebarProps: any = { userData };
   let topbarProps: any = { userData };
 
   switch (userData.role) {
     case 'admin':
     case 'super_admin':
       SidebarComponent = DashboardSidebar;
-      TopbarComponent = () => null; // لا شريط علوي للمدير
+      TopbarComponent = AdminTopbar;
       break;
     case 'agent':
       SidebarComponent = AgentSidebar;
       TopbarComponent = AgentTopbar;
-      topbarProps = { userData, isSubAgent: false, onNavigateToVip: () => router.push('/agent-dashboard?tab=vip') };
+      topbarProps = { userData, isSubAgent, onNavigateToVip: () => router.push('/agent-dashboard?tab=vip') };
       break;
-    default:
+    default: // customer
       SidebarComponent = CustomerSidebar;
       TopbarComponent = CustomerTopbar;
       break;
   }
 
   return (
-    <div className="flex h-screen overflow-hidden bg-gray-900" dir="rtl">
+    <div className="flex h-screen overflow-hidden bg-gray-950" dir="rtl">
       <SidebarComponent {...sidebarProps} />
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <TopbarComponent {...topbarProps} />
-        <main className="flex-1 overflow-y-auto p-6">{mainContent}</main>
+        <main className="flex-1 overflow-y-auto p-6 bg-gradient-to-b from-gray-900 to-gray-950">
+          {mainContent}
+        </main>
       </div>
     </div>
   );
