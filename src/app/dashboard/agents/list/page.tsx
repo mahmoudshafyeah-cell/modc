@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
-import { RefreshCw, Search, UserCheck, UserX } from 'lucide-react';
+import { RefreshCw, Search } from 'lucide-react';
 import { toast } from 'sonner';
 import AuthGuard from '@/components/AuthGuard';
 
@@ -27,7 +27,6 @@ export default function AgentsListPage() {
 
   async function fetchAgents() {
     setLoading(true);
-    // جلب الوكلاء من جدول profiles مع دور 'agent' أو 'sub_agent'
     const { data: profiles, error } = await supabase
       .from('profiles')
       .select('id, email, full_name, role, created_at')
@@ -38,7 +37,6 @@ export default function AgentsListPage() {
       return;
     }
 
-    // إضافة الرصيد من جدول wallets ونسبة العمولة من جدول agent_commissions
     const agentsWithData = await Promise.all(
       (profiles || []).map(async (agent) => {
         const { data: wallet } = await supabase
@@ -55,7 +53,7 @@ export default function AgentsListPage() {
           ...agent,
           balance: wallet?.balance || 0,
           commission_rate: commission?.commission_rate || 0,
-          is_active: true, // يمكن إضافة عمود في profiles لتحديد النشاط
+          is_active: true,
         };
       })
     );
@@ -77,7 +75,6 @@ export default function AgentsListPage() {
             <RefreshCw size={18} className="text-gray-300" />
           </button>
         </div>
-
         <div className="relative">
           <Search size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500" />
           <input
@@ -88,7 +85,6 @@ export default function AgentsListPage() {
             className="w-full md:w-80 pr-9 py-2 rounded-xl bg-dark-100 border border-gray-700 text-white text-sm"
           />
         </div>
-
         {loading ? (
           <div className="flex justify-center py-20"><div className="w-10 h-10 border-3 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin" /></div>
         ) : filtered.length === 0 ? (
@@ -110,7 +106,7 @@ export default function AgentsListPage() {
                 {filtered.map(a => (
                   <tr key={a.id} className="border-b border-gray-800 hover:bg-gray-800/50">
                     <td className="p-3 text-gray-300">{a.email}</td>
-                    <td className="p-3 text-gray-300">{a.full_name || '-'}</tr>
+                    <td className="p-3 text-gray-300">{a.full_name || '-'}</td>
                     <td className="p-3 text-gray-300">${a.balance.toFixed(2)}</td>
                     <td className="p-3 text-gray-300">{a.commission_rate}%</td>
                     <td className="p-3">
