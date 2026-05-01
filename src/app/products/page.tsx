@@ -1,4 +1,3 @@
-// src/app/products/page.tsx
 'use client';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
@@ -12,7 +11,6 @@ import ProductBanner from './components/ProductBanner';
 import TickerBar from './components/TickerBar';
 
 // مكونات الأدوار (يتم استيرادها مرة واحدة في الأعلى)
-import DashboardSidebar from '@/app/dashboard/components/DashboardSidebar'; // للمدير
 import AgentSidebar from '@/app/(main)/agent-dashboard/components/AgentSidebar';
 import CustomerSidebar from '@/app/(main)/customer-dashboard/components/DashboardSidebar';
 import AgentTopbar from '@/app/(main)/agent-dashboard/components/AgentTopbar';

@@ -210,9 +210,8 @@ export default function DashboardSidebar({ userData }: { userData?: UserData | n
   const isBalanceNegative = (user.balance || 0) < 0;
   
   // ✅ الحصول على الدور الحقيقي للمستخدم باستخدام الدالة المساعدة
-  const [effectiveRole, setEffectiveRole] = useState('customer');
-
-  const isAdmin = effectiveRole === 'admin' || effectiveRole === 'super_admin';
+  const isSuperAdmin = userData?.role === 'super_admin';
+  const isAdmin = userData?.role === 'admin';
   const toggleSection = (id: string) => setOpenSections(prev => ({ ...prev, [id]: !prev[id] }));
 
   useEffect(() => {
