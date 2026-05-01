@@ -8,6 +8,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Eye, EyeOff, Mail, Lock } from "lucide-react";
 import { toast } from "sonner";
+import { createClient } from '@supabase/supabase-js';
+import { jwtDecode } from 'jwt-decode';
 
 const loginSchema = z.object({
   email: z.string().email("يرجى إدخال بريد إلكتروني صالح"),
@@ -34,30 +36,64 @@ export default function LoginForm() {
   const onSubmit = async (data: LoginFormValues) => {
     setIsLoading(true);
     try {
-      const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: data.email, password: data.password }),
+      // 1. تسجيل الدخول مباشرة عبر Supabase Auth
+      const supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      );
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email: data.email,
+        password: data.password,
       });
 
-      const result = await res.json();
-
-      if (!res.ok) {
-        toast.error(result.error || 'فشل تسجيل الدخول');
+      if (authError) {
+        toast.error(authError.message || 'فشل تسجيل الدخول');
         setIsLoading(false);
         return;
       }
 
-      if (result.requires2FA) {
-        sessionStorage.setItem('2fa_userId', result.userId);
-        router.push('/auth/2fa');
+      const session = authData.session;
+      if (!session) {
+        toast.error('لم يتم استلام جلسة المصادقة');
+        setIsLoading(false);
         return;
       }
 
-      localStorage.setItem('auth_token', result.token);
-      setTimeout(() => toast.success('تم تسجيل الدخول بنجاح'), 10);
-      window.location.href = result.redirectPath;
+      // تخزين التوكن
+      localStorage.setItem('auth_token', session.access_token);
+
+      // 2. جلب دور المستخدم من جدول profiles (باستخدام service role key أو ثاني)
+      const supabaseAdmin = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!
+      );
+      const { data: profile, error: profileError } = await supabaseAdmin
+        .from('profiles')
+        .select('role')
+        .eq('id', authData.user.id)
+        .single();
+
+      let role = 'customer';
+      if (profileError) {
+        console.error('Failed to fetch profile role:', profileError);
+        // محاولة قراءة الدور من التوكن (إذا كان موجوداً)
+        try {
+          const decoded: any = jwtDecode(session.access_token);
+          role = decoded.role || decoded.user_metadata?.role || 'customer';
+        } catch {}
+      } else {
+        role = profile.role;
+      }
+
+      // 3. تحديد مسار التوجيه
+      let redirectPath = '/customer-dashboard';
+      if (role === 'super_admin' || role === 'admin') redirectPath = '/dashboard';
+      else if (role === 'agent' || role === 'sub_agent') redirectPath = '/agent-dashboard';
+
+      toast.success('تم تسجيل الدخول بنجاح');
+      window.location.href = redirectPath;
     } catch (error) {
+      console.error(error);
       toast.error('حدث خطأ غير متوقع');
       setIsLoading(false);
     }
@@ -105,7 +141,7 @@ export default function LoginForm() {
       </div>
 
       <button type="submit" disabled={isLoading} className="w-full rounded-lg bg-blue-600 py-2.5 text-center text-sm font-medium text-white transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-70">
-        {isLoading ? "جاري تسجيل الدخول..." : "تسجيل الدخول"}
+        {isLoading ? "جاري التأكد من الحساب" : "تسجيل الدخول"}
       </button>
     </form>
   );
