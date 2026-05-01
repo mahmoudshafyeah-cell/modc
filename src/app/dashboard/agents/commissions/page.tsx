@@ -29,9 +29,8 @@ export default function AgentCommissionsPage() {
       .from('agent_commissions')
       .select('*, agents:agent_id(email)')
       .order('created_at', { ascending: false });
-    if (error) {
-      toast.error('فشل جلب العمولات');
-    } else {
+    if (error) toast.error('فشل جلب العمولات');
+    else {
       const formatted = (data || []).map(c => ({ ...c, agent_email: c.agents?.email || c.agent_id }));
       setCommissions(formatted);
     }
@@ -56,15 +55,9 @@ export default function AgentCommissionsPage() {
       <div dir="rtl" className="space-y-6 p-6">
         <div className="flex justify-between items-center">
           <h1 className="text-2xl font-bold text-white">عمولات الوكلاء</h1>
-          <button onClick={fetchCommissions} className="p-2 rounded-xl bg-gray-700 hover:bg-gray-600">
-            <RefreshCw size={18} className="text-gray-300" />
-          </button>
+          <button onClick={fetchCommissions} className="p-2 rounded-xl bg-gray-700 hover:bg-gray-600"><RefreshCw size={18} /></button>
         </div>
-        {loading ? (
-          <div className="flex justify-center py-20"><div className="w-10 h-10 animate-spin" /></div>
-        ) : commissions.length === 0 ? (
-          <div className="text-center py-20 text-gray-400">لا توجد عمولات محددة</div>
-        ) : (
+        {loading ? <div className="flex justify-center py-20"><div className="w-10 h-10 animate-spin" /></div> : commissions.length === 0 ? <div className="text-center py-20 text-gray-400">لا توجد عمولات محددة</div> : (
           <div className="overflow-x-auto rounded-xl bg-dark-100 border border-gray-800">
             <table className="w-full text-sm">
               <thead className="border-b border-gray-700">

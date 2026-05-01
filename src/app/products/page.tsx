@@ -1,329 +1,278 @@
+// src/app/products/page.tsx
 'use client';
 import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
-import Image from 'next/image';
-import { Search, Grid3x3, LayoutList, User, LogIn, UserPlus, Package, ShoppingCart, LogOut } from 'lucide-react';
-import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
+import { Search, Zap } from 'lucide-react';
+import { jwtDecode } from 'jwt-decode';
+import { toast } from 'sonner';
 
-interface Category {
-  id: string;
-  name: string;
-  icon?: string;
-  image_url?: string;
-}
+// مكونات البانر والشريط الإخباري
+import ProductBanner from './components/ProductBanner';
+import TickerBar from './components/TickerBar';
 
-interface Product {
-  id: string;
-  name: string;
-  price: number;
-  image_url: string;
-  category_id: string;
-  description: string;
-}
+// مكونات الـ Sidebar و Topbar الخاصة بالأدوار
+// (يجب التأكد من وجود هذه المسارات)
+import DashboardSidebar from '@/app/dashboard/components/DashboardSidebar'; // للمدير
+import AgentSidebar from '@/app/(main)/agent-dashboard/components/AgentSidebar'; // للوكيل
+import CustomerSidebar from '@/app/(main)/customer-dashboard/components/DashboardSidebar'; // للعميل
 
-interface Banner {
-  id: string;
-  image_url: string;
-  link_url: string;
-  sort_order: number;
-}
+import AgentTopbar from '@/app/(main)/agent-dashboard/components/AgentTopbar';
+import CustomerTopbar from '@/app/(main)/customer-dashboard/components/DashboardTopbar';
 
-interface TickerMessage {
+// مكون Topbar افتراضي للمدير (إذا لم يكن موجوداً)
+const AdminTopbar = ({ userData }: { userData: any }) => (
+  <header className="h-16 flex items-center justify-between px-6 border-b border-gray-800 bg-dark-100">
+    <div></div>
+    <div className="text-white">مرحباً {userData?.full_name || 'مدير'}</div>
+  </header>
+);
+
+interface UserData {
   id: string;
-  text: string;
-  speed: number;
-  is_active: boolean;
+  email: string;
+  role: string;
+  full_name?: string;
+  balance?: number;
+  avatar_url?: string;
 }
 
 export default function ProductsPage() {
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [products, setProducts] = useState<Product[]>([]);
-  const [banners, setBanners] = useState<Banner[]>([]);
-  const [tickerMessages, setTickerMessages] = useState<TickerMessage[]>([]);
-  const [tickerSpeed, setTickerSpeed] = useState(30);
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState<any>(null);
   const router = useRouter();
+  const [products, setProducts] = useState<any[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
+  const [activeFilter, setActiveFilter] = useState('all');
+  const [search, setSearch] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [sortBy, setSortBy] = useState<'default' | 'price-asc' | 'price-desc'>('default');
+  const [userData, setUserData] = useState<UserData | null>(null);
+  const [isSubAgent, setIsSubAgent] = useState(false);
 
   useEffect(() => {
-    fetchUser();
+    const token = localStorage.getItem('auth_token');
+    if (token) {
+      try {
+        const decoded = jwtDecode<UserData>(token);
+        setUserData(decoded);
+        if (decoded.role === 'agent') {
+          checkIfSubAgent(decoded.id);
+        }
+        fetchUserBalance(decoded.id);
+      } catch {}
+    }
     fetchCategories();
-    fetchProducts();
-    fetchBanners();
-    fetchTicker();
   }, []);
 
-  async function fetchUser() {
-    const { data: { user } } = await supabase.auth.getUser();
-    setUser(user);
+  useEffect(() => {
+    fetchProducts();
+  }, [activeFilter]);
+
+  const getHeaders = () => {
+    const token = localStorage.getItem('auth_token');
+    return token ? { 'Authorization': `Bearer ${token}` } : {};
+  };
+
+  async function checkIfSubAgent(userId: string) {
+    try {
+      const token = localStorage.getItem('auth_token');
+      const res = await fetch(`/api/agent/is-sub-agent?userId=${userId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (res.ok) setIsSubAgent(data.isSubAgent);
+    } catch {}
+  }
+
+  async function fetchUserBalance(userId: string) {
+    try {
+      const res = await fetch(`/api/wallet?userId=${userId}`, { headers: getHeaders() });
+      const data = await res.json();
+      if (res.ok && data.balance !== undefined) {
+        setUserData(prev => prev ? { ...prev, balance: data.balance } : prev);
+      }
+    } catch {}
   }
 
   async function fetchCategories() {
-    const { data } = await supabase.from('categories').select('*').order('name');
-    setCategories(data || []);
+    try {
+      const res = await fetch('/api/categories', { headers: getHeaders() });
+      const data = await res.json();
+      if (res.ok) setCategories(data.categories || []);
+    } catch {}
   }
 
   async function fetchProducts() {
     setLoading(true);
-    let query = supabase.from('products').select('*');
-    if (selectedCategory) {
-      query = query.eq('category_id', selectedCategory);
-    }
-    const { data } = await query;
-    setProducts(data || []);
-    setLoading(false);
-  }
-
-  async function fetchBanners() {
-    const { data } = await supabase
-      .from('banners')
-      .select('*')
-      .eq('is_active', true)
-      .order('sort_order', { ascending: true });
-    setBanners(data || []);
-  }
-
-  async function fetchTicker() {
-    const { data } = await supabase
-      .from('ticker')
-      .select('*')
-      .eq('is_active', true);
-    if (data && data.length > 0) {
-      setTickerMessages(data);
-      setTickerSpeed(data[0].speed || 30);
+    try {
+      const url = activeFilter === 'all'
+        ? '/api/products?limit=100'
+        : `/api/products?category=${activeFilter}&limit=100`;
+      const res = await fetch(url, { headers: getHeaders() });
+      const data = await res.json();
+      if (res.ok) setProducts(data.products || []);
+    } catch (error) {
+      console.error('فشل جلب المنتجات:', error);
+    } finally {
+      setLoading(false);
     }
   }
 
-  useEffect(() => {
-    fetchProducts();
-  }, [selectedCategory]);
-
-  const filteredProducts = products.filter(p =>
-    p.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  // تقسيم الفئات إلى مجموعات من 4
-  const chunkSize = 4;
-  const categoryChunks = [];
-  for (let i = 0; i < categories.length; i += chunkSize) {
-    categoryChunks.push(categories.slice(i, i + chunkSize));
-  }
-
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    setUser(null);
+  const handleLogout = () => {
+    localStorage.removeItem('auth_token');
+    setUserData(null);
     toast.success('تم تسجيل الخروج');
-    router.refresh();
+    router.push('/sign-up-login-screen');
   };
 
-  return (
-    <div dir="rtl" className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800">
-      {/* الشريط الإخباري (Ticker) */}
-      {tickerMessages.length > 0 && (
-        <div className="bg-cyan-600/20 border-b border-cyan-500/30 py-2 overflow-hidden">
-          <div className="whitespace-nowrap animate-marquee" style={{ animationDuration: `${tickerSpeed}s` }}>
-            {tickerMessages.map((msg, idx) => (
-              <span key={msg.id} className="inline-block mx-4 text-cyan-300 text-sm">
-                {msg.text} {idx < tickerMessages.length - 1 && '•'}
-              </span>
-            ))}
+  // ترتيب وتصفية المنتجات
+  let filtered = products.filter(p =>
+    !search || p.name?.toLowerCase().includes(search.toLowerCase())
+  );
+  if (sortBy === 'price-asc') filtered.sort((a, b) => a.price - b.price);
+  if (sortBy === 'price-desc') filtered.sort((a, b) => b.price - a.price);
+
+  const filterTabs = [
+    { id: 'all', label: 'الكل' },
+    ...categories.map(c => ({ id: c.id, label: `${c.icon || '📁'} ${c.name_ar || c.name}` }))
+  ];
+
+  // المحتوى الرئيسي (المنتجات + الفلاتر)
+  const mainContent = (
+    <div className="space-y-6">
+      <ProductBanner />
+      <TickerBar />
+
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <h1 className="text-2xl font-bold text-white">المنتجات</h1>
+        <div className="flex flex-wrap gap-2">
+          <div className="relative w-full md:w-64">
+            <Search size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500" />
+            <input
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="ابحث عن منتج..."
+              className="w-full pr-10 py-2.5 rounded-xl bg-dark-100 border border-gray-700 text-white text-sm"
+            />
           </div>
-        </div>
-      )}
-
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex flex-col lg:flex-row gap-8">
-          {/* الشريط الجانبي (Sidebar) */}
-          <aside className="lg:w-72 w-full bg-dark-100 rounded-2xl border border-gray-800 p-5 h-fit sticky top-20">
-            <div className="text-right">
-              {user ? (
-                <>
-                  <div className="flex items-center gap-3 mb-4 pb-4 border-b border-gray-700">
-                    <div className="w-12 h-12 rounded-full bg-cyan-600 flex items-center justify-center text-white font-bold text-lg">
-                      {user.email?.charAt(0).toUpperCase()}
-                    </div>
-                    <div>
-                      <p className="text-white font-bold">{user.user_metadata?.full_name || user.email?.split('@')[0]}</p>
-                      <p className="text-gray-400 text-xs">{user.email}</p>
-                    </div>
-                  </div>
-                  <Link href="/customer-dashboard" className="flex items-center gap-2 text-gray-300 hover:text-white py-2 transition">
-                    <Package size={18} /> لوحة التحكم
-                  </Link>
-                  <Link href="/customer-dashboard/orders" className="flex items-center gap-2 text-gray-300 hover:text-white py-2 transition">
-                    <ShoppingCart size={18} /> طلباتي
-                  </Link>
-                  <button onClick={handleLogout} className="w-full mt-4 flex items-center justify-center gap-2 py-2 rounded-lg bg-red-600/20 text-red-400 hover:bg-red-600/30 transition">
-                    <LogOut size={16} /> تسجيل الخروج
-                  </button>
-                </>
-              ) : (
-                <>
-                  <div className="text-center mb-6">
-                    <User size={48} className="mx-auto text-cyan-400 mb-2" />
-                    <p className="text-gray-300 text-sm mb-4">مرحباً بك في متجر ModC</p>
-                    <Link href="/sign-up-login-screen" className="w-full flex items-center justify-center gap-2 py-2 rounded-lg bg-cyan-600 text-white font-bold mb-2">
-                      <LogIn size={16} /> تسجيل الدخول
-                    </Link>
-                    <Link href="/sign-up-login-screen?tab=register" className="w-full flex items-center justify-center gap-2 py-2 rounded-lg bg-gray-700 text-white font-bold">
-                      <UserPlus size={16} /> إنشاء حساب
-                    </Link>
-                  </div>
-                </>
-              )}
-            </div>
-          </aside>
-
-          {/* المحتوى الرئيسي */}
-          <main className="flex-1">
-            {/* البانرات – عرض في المنتصف مع تجاوب كامل */}
-            {banners.length > 0 && (
-              <div className="mb-8 overflow-hidden rounded-2xl shadow-xl">
-                <div className="flex flex-nowrap overflow-x-auto snap-x snap-mandatory gap-4 p-1 scroll-smooth">
-                  {banners.map(banner => (
-                    <a
-                      key={banner.id}
-                      href={banner.link_url || '#'}
-                      target={banner.link_url ? '_blank' : '_self'}
-                      className="snap-start shrink-0 w-full md:w-3/4 lg:w-2/3 xl:w-1/2 mx-auto block"
-                    >
-                      <div className="relative w-full h-48 md:h-64 rounded-xl overflow-hidden">
-                        <img src={banner.image_url} alt="بانر" className="w-full h-full object-cover" />
-                      </div>
-                    </a>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* الفئات (شبكة رباعيات/ثلاثيات متجاوبة) */}
-            <div className="mb-12">
-              <h2 className="text-xl font-semibold text-cyan-400 mb-4 text-right">الفئات</h2>
-              <div className="space-y-6">
-                {categoryChunks.map((chunk, idx) => (
-                  <div key={idx} className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                    {chunk.map(cat => (
-                      <button
-                        key={cat.id}
-                        onClick={() => setSelectedCategory(cat.id === selectedCategory ? null : cat.id)}
-                        className={`group p-4 rounded-2xl text-center transition-all duration-300 ${
-                          selectedCategory === cat.id
-                            ? 'bg-cyan-600 text-white shadow-lg scale-105'
-                            : 'bg-gray-800 text-gray-300 hover:bg-gray-700 hover:scale-105'
-                        }`}
-                      >
-                        {cat.image_url ? (
-                          <img src={cat.image_url} alt={cat.name} className="w-12 h-12 mx-auto mb-2 rounded-full" />
-                        ) : (
-                          <div className="w-12 h-12 mx-auto mb-2 rounded-full bg-cyan-500/20 flex items-center justify-center text-2xl">
-                            {cat.icon || '📁'}
-                          </div>
-                        )}
-                        <span className="text-sm font-medium">{cat.name}</span>
-                      </button>
-                    ))}
-                  </div>
-                ))}
-              </div>
-              {selectedCategory && (
-                <button onClick={() => setSelectedCategory(null)} className="mt-4 text-sm text-cyan-400 hover:text-cyan-300 transition">
-                  عرض جميع المنتجات
-                </button>
-              )}
-            </div>
-
-            {/* شريط البحث والتحكم */}
-            <div className="flex flex-wrap justify-between items-center gap-4 mb-6 bg-dark-100/50 p-4 rounded-xl">
-              <div className="relative flex-1 max-w-md">
-                <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                <input
-                  type="text"
-                  placeholder="ابحث عن منتج..."
-                  value={searchTerm}
-                  onChange={e => setSearchTerm(e.target.value)}
-                  className="w-full pr-10 pl-4 py-2 rounded-xl bg-gray-800 text-white border border-gray-700 focus:border-cyan-500 outline-none"
-                />
-              </div>
-              <div className="flex gap-2">
-                <button onClick={() => setViewMode('grid')} className={`p-2 rounded-lg transition ${viewMode === 'grid' ? 'bg-cyan-600 text-white' : 'bg-gray-700 text-gray-400'}`}>
-                  <Grid3x3 size={18} />
-                </button>
-                <button onClick={() => setViewMode('list')} className={`p-2 rounded-lg transition ${viewMode === 'list' ? 'bg-cyan-600 text-white' : 'bg-gray-700 text-gray-400'}`}>
-                  <LayoutList size={18} />
-                </button>
-              </div>
-            </div>
-
-            {/* المنتجات */}
-            {loading ? (
-              <div className="flex justify-center py-20"><div className="w-10 h-10 border-3 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin" /></div>
-            ) : filteredProducts.length === 0 ? (
-              <div className="text-center py-20 text-gray-400">لا توجد منتجات</div>
-            ) : viewMode === 'grid' ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {filteredProducts.map(product => (
-                  <Link href={`/products/${product.id}`} key={product.id} className="group bg-gray-800 rounded-2xl overflow-hidden hover:scale-105 transition duration-300">
-                    <div className="h-48 bg-gray-700 flex items-center justify-center relative">
-                      {product.image_url ? (
-                        <img src={product.image_url} alt={product.name} className="h-full w-full object-cover" />
-                      ) : (
-                        <Package size={48} className="text-gray-500" />
-                      )}
-                    </div>
-                    <div className="p-4 text-right">
-                      <h3 className="text-lg font-bold text-white mb-1 line-clamp-1">{product.name}</h3>
-                      <p className="text-gray-400 text-sm line-clamp-2">{product.description}</p>
-                      <div className="flex justify-between items-center mt-3">
-                        <span className="text-cyan-400 font-bold">${product.price}</span>
-                        <button className="px-4 py-1.5 rounded-lg bg-cyan-600 text-white text-sm hover:bg-cyan-700 transition">
-                          شراء
-                        </button>
-                      </div>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {filteredProducts.map(product => (
-                  <Link href={`/products/${product.id}`} key={product.id} className="block bg-gray-800 rounded-xl p-4 hover:bg-gray-700 transition">
-                    <div className="flex items-center gap-4">
-                      <div className="w-16 h-16 bg-gray-700 rounded-lg flex items-center justify-center shrink-0">
-                        {product.image_url ? <img src={product.image_url} className="h-full w-full object-cover rounded-lg" /> : <Package size={24} className="text-gray-500" />}
-                      </div>
-                      <div className="flex-1 text-right">
-                        <h3 className="text-white font-bold">{product.name}</h3>
-                        <p className="text-gray-400 text-sm line-clamp-1">{product.description}</p>
-                      </div>
-                      <div className="text-left">
-                        <span className="text-cyan-400 font-bold">${product.price}</span>
-                        <button className="block mt-1 px-3 py-1 rounded-lg bg-cyan-600 text-white text-xs">شراء</button>
-                      </div>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            )}
-          </main>
+          <select
+            value={sortBy}
+            onChange={e => setSortBy(e.target.value as any)}
+            className="px-4 py-2.5 rounded-xl bg-dark-100 border border-gray-700 text-white text-sm"
+          >
+            <option value="default">الافتراضي</option>
+            <option value="price-asc">السعر: من الأقل إلى الأعلى</option>
+            <option value="price-desc">السعر: من الأعلى إلى الأقل</option>
+          </select>
         </div>
       </div>
 
-      {/* إضافة تحريك الشريط الإخباري */}
-      <style jsx global>{`
-        @keyframes marquee {
-          0% { transform: translateX(100%); }
-          100% { transform: translateX(-100%); }
-        }
-        .animate-marquee {
-          display: inline-block;
-          animation: marquee linear infinite;
-        }
-      `}</style>
+      <div className="flex flex-wrap gap-2">
+        {filterTabs.map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveFilter(tab.id)}
+            className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
+              activeFilter === tab.id ? 'bg-cyan-600 text-white' : 'bg-dark-100 text-gray-400 hover:text-white'
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {loading ? (
+        <div className="flex justify-center py-16">
+          <div className="w-10 h-10 border-3 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin" />
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="text-center py-16">
+          <div className="text-5xl mb-4">🔍</div>
+          <h3 className="text-xl font-bold text-white">لا توجد منتجات</h3>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {filtered.map(product => (
+            <Link
+              key={product.id}
+              href={`/products/${product.id}`}
+              className="group rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-2 block"
+              style={{ background: 'rgba(17,17,40,0.9)', border: '1px solid rgba(12,113,178,0.2)' }}
+            >
+              <div className="h-40 flex items-center justify-center text-6xl bg-cyan-600/10">
+                {product.image || product.emoji || '📦'}
+              </div>
+              <div className="p-5">
+                <h3 className="font-bold text-white">{product.name}</h3>
+                <div className="flex items-center justify-between mt-3">
+                  <span className="text-lg font-black text-white">${product.price}</span>
+                  <span className="flex items-center gap-1 text-xs text-cyan-400">
+                    <Zap size={12} /> {product.delivery_time || 'فوري'}
+                  </span>
+                </div>
+              </div>
+            </Link>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
+  // إذا لم يكن المستخدم مسجلاً -> عرض شريط جانبي للزائر فقط، بدون Topbar
+  if (!userData) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800" dir="rtl">
+        <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="flex flex-col lg:flex-row gap-8">
+            <aside className="lg:w-80 flex-shrink-0">
+              <div className="sticky top-6 rounded-2xl bg-dark-100 border border-gray-800 p-6 text-center">
+                <div className="text-5xl mb-4">👤</div>
+                <h3 className="text-xl font-bold text-white mb-2">مرحباً بك</h3>
+                <p className="text-gray-400 text-sm mb-6">سجل دخولك للاستمتاع بتجربة شراء أفضل</p>
+                <Link href="/sign-up-login-screen" className="block w-full py-3 rounded-xl bg-cyan-600 text-white font-bold text-center mb-3">
+                  تسجيل الدخول
+                </Link>
+                <Link href="/sign-up-login-screen?tab=signup" className="block w-full py-3 rounded-xl bg-gray-800 text-white font-bold text-center">
+                  إنشاء حساب جديد
+                </Link>
+              </div>
+            </aside>
+            <main className="flex-1 min-w-0">{mainContent}</main>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // تحديد المكونات حسب الدور
+  let SidebarComponent;
+  let TopbarComponent;
+  let sidebarProps = { userData };
+  let topbarProps: any = { userData };
+
+  switch (userData.role) {
+    case 'admin':
+    case 'super_admin':
+      SidebarComponent = DashboardSidebar;
+      TopbarComponent = AdminTopbar; // أو أي مكون علوي للمدير
+      break;
+    case 'agent':
+      SidebarComponent = AgentSidebar;
+      TopbarComponent = AgentTopbar;
+      topbarProps = { userData, isSubAgent, onNavigateToVip: () => {} }; // يمكن إضافة التنقل
+      break;
+    default: // customer
+      SidebarComponent = CustomerSidebar;
+      TopbarComponent = CustomerTopbar;
+      break;
+  }
+
+  return (
+    <div className="flex h-screen overflow-hidden" style={{ background: '#0A0A14' }} dir="rtl">
+      <SidebarComponent {...sidebarProps} />
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        <TopbarComponent {...topbarProps} />
+        <main className="flex-1 overflow-y-auto p-6">{mainContent}</main>
+      </div>
     </div>
   );
 }

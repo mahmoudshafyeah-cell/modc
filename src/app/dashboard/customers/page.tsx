@@ -81,7 +81,7 @@ export default function CustomersPage() {
           />
         </div>
         {loading ? (
-          <div className="flex justify-center py-20"><div className="w-10 h-10 border-3 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin" /></div>
+          <div className="flex justify-center py-20"><div className="w-10 h-10 animate-spin" /></div>
         ) : filtered.length === 0 ? (
           <div className="text-center py-20 text-gray-400">لا يوجد عملاء</div>
         ) : (
