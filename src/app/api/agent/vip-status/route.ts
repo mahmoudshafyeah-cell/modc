@@ -1,49 +1,33 @@
-import { createClient } from '@supabase/supabase-js';
-import { NextResponse } from 'next/server';
-import jwt from 'jsonwebtoken';
+import { NextRequest, NextResponse } from 'next/server';
+import { supabase } from '@/lib/supabase';
+import { jwtDecode } from 'jwt-decode';
 
-const JWT_SECRET = process.env.JWT_SECRET!;
-
-export async function GET(req: Request) {
-  const authHeader = req.headers.get('Authorization');
-  if (!authHeader) return NextResponse.json({ error: 'غير مصرح' }, { status: 401 });
-  const token = authHeader.replace('Bearer ', '');
-  let userId: string;
+export async function GET(req: NextRequest) {
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as { id: string; role: string };
-    userId = decoded.id;
-  } catch {
-    return NextResponse.json({ error: 'jwt غير صالح' }, { status: 401 });
+    const token = req.headers.get('authorization')?.replace('Bearer ', '');
+    if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const decoded: any = jwtDecode(token);
+    const userId = decoded.id;
+
+    // جلب إجمالي إيداعات الوكيل (أو الشرط الآخر لتحديد المستوى)
+    const { data: deposits } = await supabase
+      .from('deposit_requests')
+      .select('amount')
+      .eq('user_id', userId)
+      .eq('status', 'approved');
+    const totalDeposited = deposits?.reduce((sum, d) => sum + d.amount, 0) || 0;
+
+    // جلب المستوى المناسب
+    const { data: level } = await supabase
+      .from('agent_vip_levels')
+      .select('*')
+      .lte('min_deposit', totalDeposited)
+      .order('min_deposit', { ascending: false })
+      .limit(1)
+      .single();
+
+    return NextResponse.json({ currentLevel: level || null, totalDeposited });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
-
-  const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
-
-  // جلب مستوى الوكيل الحالي
-  const { data: assignment } = await supabase
-    .from('agent_vip_assignments')
-    .select('level_id, agent_vip_levels(*)')
-    .eq('agent_id', userId)
-    .single();
-
-  // جلب جميع المستويات
-  const { data: levels } = await supabase
-    .from('agent_vip_levels')
-    .select('*')
-    .order('min_deposit', { ascending: true });
-
-  // جلب إجمالي إيداعات الوكيل
-  const { data: deposits } = await supabase
-    .from('deposit_requests')
-    .select('amount')
-    .eq('user_id', userId)
-    .eq('status', 'completed');
-
-  const totalDeposited = deposits?.reduce((sum, d) => sum + (d.amount || 0), 0) || 0;
-
-  
-  return NextResponse.json({
-    currentLevel: assignment?.agent_vip_levels || null,
-    allLevels: levels || [],
-    totalDeposited,
-  });
 }

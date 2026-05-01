@@ -1,7 +1,8 @@
-// المسار: src/app/(main)/agent-dashboard/components/AgentVipStatus.tsx
+// src/app/(main)/agent-dashboard/components/AgentVipStatus.tsx
 'use client';
 import React, { useEffect, useState } from 'react';
-import { Crown, TrendingUp, DollarSign, Percent, Shield } from 'lucide-react';
+import { Crown, TrendingUp, DollarSign, Percent, Shield, Award } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
 
 interface VipLevel {
   id: string;
@@ -11,9 +12,16 @@ interface VipLevel {
   commission_rate: number;
   discount_rate: number;
   color: string;
+  image_url?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
-export default function AgentVipStatus({ userData }: { userData: any }) {
+interface AgentVipStatusProps {
+  userData: any;
+}
+
+export default function AgentVipStatus({ userData }: AgentVipStatusProps) {
   const [currentLevel, setCurrentLevel] = useState<VipLevel | null>(null);
   const [allLevels, setAllLevels] = useState<VipLevel[]>([]);
   const [totalDeposited, setTotalDeposited] = useState(0);
@@ -50,25 +58,30 @@ export default function AgentVipStatus({ userData }: { userData: any }) {
     );
   }
 
-  // حساب التقدم نحو المستوى التالي
   const nextLevel = allLevels.find(l => l.min_deposit > totalDeposited);
   const progress = nextLevel
     ? Math.min(100, (totalDeposited / nextLevel.min_deposit) * 100)
     : 100;
 
+  const getVipLevelIcon = (level: VipLevel) => {
+    if (level.image_url) {
+      return <img src={level.image_url} alt={level.name} className="w-12 h-12 rounded-full mx-auto object-cover" />;
+    }
+    if (level.commission_rate >= 20) return <Crown size={48} className="text-purple-400" />;
+    if (level.commission_rate >= 10) return <Award size={48} className="text-cyan-400" />;
+    return <Crown size={48} style={{ color: level.color }} />;
+  };
+
   return (
     <div className="space-y-6" dir="rtl">
-      {/* ========== المستوى الحالي ========== */}
       <div
         className="rounded-2xl p-6 text-center"
         style={{
-          background: currentLevel
-            ? `${currentLevel.color}15`
-            : 'rgba(255,255,255,0.05)',
+          background: currentLevel ? `${currentLevel.color}15` : 'rgba(255,255,255,0.05)',
           border: `1px solid ${currentLevel?.color || '#333'}40`,
         }}
       >
-        <Crown size={48} className="mx-auto mb-3" style={{ color: currentLevel?.color || '#666' }} />
+        {currentLevel ? getVipLevelIcon(currentLevel) : <Crown size={48} className="mx-auto mb-3 text-gray-400" />}
         <h2 className="text-2xl font-black text-white mb-2">
           {currentLevel ? currentLevel.name : 'بدون مستوى'}
         </h2>
@@ -84,9 +97,15 @@ export default function AgentVipStatus({ userData }: { userData: any }) {
             <span className="text-gray-400">إجمالي الإيداعات:</span>
             <span className="text-white font-bold">${totalDeposited.toFixed(2)}</span>
           </div>
+          {currentLevel && (
+            <div className="flex items-center gap-1 text-sm">
+              <Percent size={14} className="text-cyan-400" />
+              <span className="text-gray-400">العمولة الحالية:</span>
+              <span className="text-white font-bold">{currentLevel.commission_rate}%</span>
+            </div>
+          )}
         </div>
 
-        {/* شريط التقدم */}
         {nextLevel && (
           <div className="mt-4">
             <div className="flex justify-between text-xs text-gray-500 mb-1">
@@ -109,7 +128,6 @@ export default function AgentVipStatus({ userData }: { userData: any }) {
         )}
       </div>
 
-      {/* ========== جميع المستويات ========== */}
       <div
         className="rounded-2xl p-6"
         style={{ background: '#111128', border: '1px solid rgba(255,255,255,0.06)' }}

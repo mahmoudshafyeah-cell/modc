@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import PlatformUsersPage from './users/page';
+import PlatformUsersPage from '@/app/dashboard/platform/users/page';
 import PaymentMethodsPage from '@/app/dashboard/payment-methods/page';
 import ProductsPage from '@/app/dashboard/warehouse/products/page';
 import CouponsPage from '@/app/dashboard/coupons/page';

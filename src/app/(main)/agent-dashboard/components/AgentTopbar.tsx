@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useEffect, useRef } from 'react';
-import { Bell, X, CheckCheck, ExternalLink, Wallet, TrendingUp, Crown, UserMinus } from 'lucide-react';
+import { Bell, X, CheckCheck, ExternalLink, Wallet, TrendingUp, Crown, UserMinus, Award } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
 
@@ -21,6 +21,15 @@ interface AgentTopbarProps {
   onNavigateToVip?: () => void;
 }
 
+interface VipLevel {
+  id: string;
+  name: string;
+  image_url?: string;
+  color?: string;
+  commission_rate: number;
+  discount_rate: number;
+}
+
 export default function AgentTopbar({ userData, isSubAgent = false, onNavigateToVip }: AgentTopbarProps) {
   const [notifOpen, setNotifOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -28,8 +37,10 @@ export default function AgentTopbar({ userData, isSubAgent = false, onNavigateTo
   const [loadingNotifs, setLoadingNotifs] = useState(false);
   const [balance, setBalance] = useState<number | null>(null);
   const [totalEarned, setTotalEarned] = useState<number | null>(null);
+  const [vipLevel, setVipLevel] = useState<VipLevel | null>(null);
   const notifRef = useRef<HTMLDivElement>(null);
 
+  // إغلاق القائمة عند النقر خارجها
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (notifRef.current && !notifRef.current.contains(e.target as Node)) {
@@ -40,6 +51,7 @@ export default function AgentTopbar({ userData, isSubAgent = false, onNavigateTo
     return () => document.removeEventListener('mousedown', handler);
   }, [notifOpen]);
 
+  // جلب العدد غير المقروء كل 30 ثانية
   useEffect(() => {
     if (!userData?.id) return;
     fetchUnreadCount();
@@ -47,12 +59,15 @@ export default function AgentTopbar({ userData, isSubAgent = false, onNavigateTo
     return () => clearInterval(interval);
   }, [userData?.id]);
 
+  // جلب الرصيد والأرباح ومستوى VIP عند التحميل
   useEffect(() => {
     if (!userData?.id) return;
     fetchBalance();
     fetchTotalEarned();
+    fetchVipLevel();
   }, [userData?.id]);
 
+  // جلب الإشعارات عند الفتح
   useEffect(() => {
     if (notifOpen && userData?.id) {
       fetchNotifications();
@@ -99,6 +114,19 @@ export default function AgentTopbar({ userData, isSubAgent = false, onNavigateTo
       const data = await res.json();
       if (res.ok && typeof data.monthlyProfit === 'number') {
         setTotalEarned(data.monthlyProfit);
+      }
+    } catch {}
+  }
+
+  async function fetchVipLevel() {
+    try {
+      const token = localStorage.getItem('auth_token');
+      const res = await fetch('/api/agent/vip-status', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (res.ok && data.currentLevel) {
+        setVipLevel(data.currentLevel);
       }
     } catch {}
   }
@@ -181,23 +209,29 @@ export default function AgentTopbar({ userData, isSubAgent = false, onNavigateTo
       className="h-16 flex items-center justify-between px-6 border-b flex-shrink-0"
       style={{ background: 'rgba(10,10,20,0.95)', borderColor: `${accentColor}20`, backdropFilter: 'blur(10px)' }}
     >
-      {/* الجهة اليمنى (في RTL) - زر VIP */}
+      {/* الجهة اليمنى (في RTL) - زر VIP + مستوى الوكيل */}
       <div className="flex items-center gap-3">
-        {onNavigateToVip && (
+        {/* زر مستوى الوكيل (أيقونة + مستوى) */}
+        {vipLevel && (
           <button
             onClick={onNavigateToVip}
-            className="flex items-center gap-1.5 px-3 h-9 rounded-xl text-xs font-semibold transition-all hover:bg-cyan-500/10"
+            className="flex items-center gap-2 px-3 h-9 rounded-xl text-xs font-semibold transition-all hover:bg-cyan-500/10"
             style={{ background: 'rgba(12, 113, 178, 0.1)', border: '1px solid rgba(12, 113, 178, 0.3)', color: '#00D4FF' }}
+            title={`${vipLevel.name} - عمولة ${vipLevel.commission_rate}%`}
           >
-            <TrendingUp size={14} />
-            <span>مستواي</span>
+            {vipLevel.image_url ? (
+              <img src={vipLevel.image_url} alt={vipLevel.name} className="w-5 h-5 rounded-full object-cover" />
+            ) : (
+              <Crown size={14} className="text-yellow-400" />
+            )}
+            <span className="text-sm font-bold">{vipLevel.name}</span>
           </button>
         )}
       </div>
 
       {/* الجهة اليسرى (في RTL) - الرصيد والإشعارات والمستخدم */}
       <div className="flex items-center gap-3">
-        {/* ✅ عرض الرصيد + أيقونة الوكيل بجانبه */}
+        {/* عرض الرصيد + أيقونة الوكيل بجانبه */}
         {balance !== null && (
           <div
             className="flex items-center gap-1.5 px-3 h-9 rounded-xl text-xs font-semibold"
@@ -205,11 +239,10 @@ export default function AgentTopbar({ userData, isSubAgent = false, onNavigateTo
           >
             <Wallet size={14} className="text-green-400" />
             <span>${balance.toFixed(2)}</span>
-            {/* أيقونة الوكيل بجانب الرصيد مباشرة */}
             {isSubAgent ? (
-              <UserMinus size={12} className="text-cyan-400 mr-0.5" />
+              <UserMinus size={12} className="text-cyan-400 mr-0.5" title="وكيل فرعي" />
             ) : (
-              <Crown size={12} className="text-yellow-400 mr-0.5" />
+              <Crown size={12} className="text-yellow-400 mr-0.5" title="وكيل معتمد" />
             )}
           </div>
         )}
