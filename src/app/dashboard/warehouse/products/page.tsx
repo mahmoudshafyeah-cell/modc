@@ -1,8 +1,7 @@
-// المسار: src/app/dashboard/warehouse/products/page.tsx
 'use client';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Plus, Edit, Trash2, RefreshCw, Package, Upload, X, Globe } from 'lucide-react';
+import { Plus, Edit, Trash2, RefreshCw, Package, Upload, X, Globe, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import AuthGuard from '@/components/AuthGuard';
 
@@ -10,7 +9,7 @@ export default function ProductsPage() {
   const [products, setProducts] = useState<any[]>([]);
   const [platformProducts, setPlatformProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [syncing, setSyncing] = useState(false);
+  const [syncing, setSyncing] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState({ name: '', description: '', price: '', image_url: '' });
@@ -26,11 +25,18 @@ export default function ProductsPage() {
   }
 
   async function fetchPlatformProducts() {
-    // جلب المنتجات التي تمت مزامنتها مسبقاً (يمكن تخزينها محلياً أو استدعاء API المنصة)
-    // هنا نعتمد على جدول محلي لتتبع المنتجات المزامنة، أو يمكن استدعاء API المنصة إذا أردنا.
-    // للتبسيط، سنخزنها في state محلي.
-    const { data } = await supabase.from('synced_products').select('*').order('created_at', { ascending: false });
-    setPlatformProducts(data || []);
+    try {
+      const token = localStorage.getItem('auth_token');
+      const response = await fetch('https://modc.store/api/admin/products', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!response.ok) throw new Error('فشل جلب منتجات المنصة');
+      const data = await response.json();
+      setPlatformProducts(data.products || []);
+    } catch (error) {
+      console.error('Error fetching platform products:', error);
+      // إذا فشل الجلب، نظهر القائمة المحلية فقط
+    }
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -57,9 +63,9 @@ export default function ProductsPage() {
     fetchProducts();
   }
 
-  // ✅ دالة المزامنة الفعلية مع المنصة
+  // ✅ دالة المزامنة المحدثة مع المنصة
   const syncToPlatform = async (product: any) => {
-    setSyncing(true);
+    setSyncing(product.id);
     try {
       const token = localStorage.getItem('auth_token');
       if (!token) throw new Error('لا يوجد توكن مصادقة');
@@ -73,32 +79,25 @@ export default function ProductsPage() {
         body: JSON.stringify({
           name: product.name,
           description: product.description || '',
-          price: product.price || 0,
-          image_url: product.image_url || ''
+          price: parseFloat(product.price) || 0,
+          image_url: product.image_url || '',
+          is_active: true,
         })
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || `فشلت المزامنة (HTTP ${response.status})`);
+        throw new Error(data.error || `فشلت المزامنة (HTTP ${response.status})`);
       }
 
-      const data = await response.json();
-      // تسجيل المنتج المُزامن في جدول محلي لتتبعه
-      await supabase.from('synced_products').insert({
-        product_id: product.id,
-        platform_id: data.id,
-        name: product.name,
-        synced_at: new Date().toISOString()
-      });
-
-      toast.success(`تمت مزامنة "${product.name}" مع المنصة`);
-      fetchPlatformProducts(); // تحديث قائمة المنتجات المزامنة
+      toast.success(`تمت مزامنة "${product.name}" مع المنصة بنجاح`);
+      await fetchPlatformProducts(); // تحديث قائمة المنتجات المزامنة
     } catch (error: any) {
       console.error('Sync error:', error);
       toast.error(error.message || 'حدث خطأ أثناء المزامنة');
     } finally {
-      setSyncing(false);
+      setSyncing(null);
     }
   };
 
@@ -118,7 +117,7 @@ export default function ProductsPage() {
               onClick={() => setActiveTab('platform')}
               className={`px-4 py-2 rounded-xl text-sm font-bold transition ${activeTab === 'platform' ? 'bg-cyan-600 text-white' : 'bg-gray-700 text-gray-300'}`}
             >
-              <Globe size={16} className="inline ml-1" /> المنتجات المُزامنة
+              <Globe size={16} className="inline ml-1" /> منتجات المنصة
             </button>
           </div>
         </div>
@@ -138,7 +137,15 @@ export default function ProductsPage() {
             {loading ? <div className="flex justify-center py-20"><div className="w-10 h-10 animate-spin" /></div> : products.length===0 ? <div className="text-center text-gray-400">لا توجد منتجات محلية</div> :
               <div className="overflow-x-auto rounded-xl bg-dark-100 border border-gray-800">
                 <table className="w-full text-sm">
-                  <thead className="border-b border-gray-700"><tr><th className="p-3 text-right">الاسم</th><th className="p-3 text-right">الوصف</th><th className="p-3 text-right">السعر</th><th className="p-3 text-right">الصورة</th><th className="p-3 text-right">الإجراءات</th></tr></thead>
+                  <thead className="border-b border-gray-700">
+                    <tr>
+                      <th className="p-3 text-right">الاسم</th>
+                      <th className="p-3 text-right">الوصف</th>
+                      <th className="p-3 text-right">السعر</th>
+                      <th className="p-3 text-right">الصورة</th>
+                      <th className="p-3 text-right">الإجراءات</th>
+                    </tr>
+                  </thead>
                   <tbody>
                     {products.map(p=>(
                       <tr key={p.id} className="border-b border-gray-800 hover:bg-gray-800/50">
@@ -149,7 +156,10 @@ export default function ProductsPage() {
                         <td className="p-3 flex gap-2">
                           <button onClick={()=>{ setEditingId(p.id); setForm({ name: p.name, description: p.description||'', price: p.price||'', image_url: p.image_url||'' }); setShowForm(true); }} className="text-cyan-400"><Edit size={16} /></button>
                           <button onClick={()=>deleteProduct(p.id)} className="text-red-400"><Trash2 size={16} /></button>
-                          <button onClick={()=>syncToPlatform(p)} disabled={syncing} className="text-green-400 flex items-center gap-1"><Upload size={14} /> مزامنة</button>
+                          <button onClick={()=>syncToPlatform(p)} disabled={syncing === p.id} className="text-green-400 flex items-center gap-1">
+                            {syncing === p.id ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
+                            مزامنة
+                          </button>
                         </td>
                       </tr>
                     ))}
@@ -163,16 +173,24 @@ export default function ProductsPage() {
         {activeTab === 'platform' && (
           <div className="overflow-x-auto rounded-xl bg-dark-100 border border-gray-800">
             <table className="w-full text-sm">
-              <thead className="border-b border-gray-700"><tr><th className="p-3 text-right">الاسم</th><th className="p-3 text-right">تاريخ المزامنة</th><th className="p-3 text-right">معرف المنصة</th></tr></thead>
+              <thead className="border-b border-gray-700">
+                <tr>
+                  <th className="p-3 text-right">الاسم</th>
+                  <th className="p-3 text-right">السعر</th>
+                  <th className="p-3 text-right">تاريخ الإنشاء</th>
+                </tr>
+              </thead>
               <tbody>
-                {platformProducts.map(sp => (
-                  <tr key={sp.id} className="border-b border-gray-800 hover:bg-gray-800/50">
-                    <td className="p-3 text-gray-300">{sp.name}</td>
-                    <td className="p-3 text-gray-300">{new Date(sp.synced_at).toLocaleString('ar-SY')}</td>
-                    <td className="p-3 text-gray-300">{sp.platform_id}</td>
+                {platformProducts.map((p: any) => (
+                  <tr key={p.id} className="border-b border-gray-800 hover:bg-gray-800/50">
+                    <td className="p-3 text-gray-300">{p.name}</td>
+                    <td className="p-3 text-gray-300">${p.price}</td>
+                    <td className="p-3 text-gray-300">{new Date(p.created_at).toLocaleString('ar-SY')}</td>
                   </tr>
                 ))}
-                {platformProducts.length === 0 && <tr><td colSpan={3} className="text-center p-6 text-gray-400">لم يتم مزامنة أي منتج بعد</td></tr>}
+                {platformProducts.length === 0 && (
+                  <tr><td colSpan={3} className="text-center p-6 text-gray-400">لا توجد منتجات مزامنة بعد</td></tr>
+                )}
               </tbody>
             </table>
           </div>
