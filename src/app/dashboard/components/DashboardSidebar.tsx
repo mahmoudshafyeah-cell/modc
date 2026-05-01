@@ -11,8 +11,8 @@ import {
   Crown, TicketPercent, Megaphone, Image, MessageSquare,
   Globe, ArrowDownUp, UserCheck, Key, DollarSign, ScrollText,
   Briefcase, ClipboardList, History, Wifi, Bell, TicketCheck,
-  UserRound, Crown as CrownIcon, FileCheck, Lock, Info, HelpCircle,
-  Grid, List, Eye, EyeOff, Zap, Calendar, Clock, Upload, ChevronLeft, ChevronDown, DownloadCloud
+  UserRound, Crown as CrownIcon, FileCheck, Lock, Info,
+  ChevronLeft, ChevronDown
 } from 'lucide-react';
 import { useWalletModals } from './WalletModalProvider';
 
@@ -42,7 +42,7 @@ const DEFAULT_USER: UserData = {
   balance: -144.665, total_spent: 0.552, wallet_id: '3249#',
 };
 
-// قائمة التنقل الرئيسية للعميل (تبقى كما هي)
+// قائمة العميل (لن تظهر للمدير)
 const mainNavItems: NavItem[] = [
   { id: 'nav-home', label: 'الرئيسية', icon: Home, href: '/customer-dashboard' },
   { id: 'nav-add-balance', label: 'اضافة رصيد', icon: PlusCircle, action: 'deposit' },
@@ -51,146 +51,117 @@ const mainNavItems: NavItem[] = [
   { id: 'nav-orders', label: 'طلباتي', icon: Package, href: '/customer-dashboard/orders' },
   { id: 'nav-security', label: 'الحماية', icon: Shield, href: '/customer-dashboard/security' },
 ];
-
 const bottomItems: NavItem[] = [
   { id: 'nav-api', label: 'API', icon: Code, disabled: true, badge: 'قريباً' },
   { id: 'nav-rpi', label: 'RPI', icon: TrendingUp, disabled: true, badge: 'قريباً' },
 ];
 
-// ===============================
-// أقسام لوحة تحكم المدير (Admin Dashboard)
-// ===============================
-
-// إدارة المستودع (الذي تم إنشاؤه مسبقاً)
-const warehouseSection = {
-  id: 'warehouse',
-  label: 'إدارة المستودع',
-  icon: Warehouse,
-  items: [
-    { id: 'warehouse-dashboard', label: 'لوحة المستودع', icon: Warehouse, href: '/dashboard/warehouse' },
-    { id: 'warehouse-assets', label: 'الأصول', icon: Boxes, href: '/dashboard/warehouse/assets' },
-    { id: 'warehouse-products', label: 'المنتجات المحلية', icon: Package, href: '/dashboard/warehouse/products' },
-    { id: 'warehouses', label: 'المستودعات', icon: Layers, href: '/dashboard/warehouse/warehouses' },
-    { id: 'warehouse-providers', label: 'الموردون', icon: Truck, href: '/dashboard/warehouse/providers' },
-    { id: 'warehouse-orders', label: 'الطلبات والمرتجعات', icon: ClipboardList, href: '/dashboard/warehouse/orders' },
-    { id: 'warehouse-reports', label: 'التقارير', icon: BarChart3, href: '/dashboard/warehouse/reports' },
-    { id: 'warehouse-settings', label: 'إعدادات المستودع', icon: Settings, href: '/dashboard/warehouse/settings' },
-    { id: 'warehouse-categories', label: 'فئات الأصول', icon: Folder, href: '/dashboard/warehouse/categories' },
-    { id: 'warehouse-asset-types', label: 'أنواع الأصول', icon: Tag, href: '/dashboard/warehouse/asset-types' },
-    { id: 'warehouse-alerts', label: 'تنبيهات المخزون', icon: AlertTriangle, href: '/dashboard/warehouse/alerts' },
-    { id: 'warehouse-shipping', label: 'طلبات الشحن', icon: Truck, href: '/dashboard/warehouse/shipping' },
-    { id: 'warehouse-bundles', label: 'الحزم', icon: Package, href: '/dashboard/warehouse/bundles' },
-  ]
-};
-
-// إدارة الوكلاء (من المشروع القديم)
-const agentsSection = {
-  id: 'agents',
-  label: 'إدارة الوكلاء',
-  icon: ShoppingCart,
-  items: [
-    { id: 'agentPurchase', label: 'شراء الوكيل', icon: ShoppingCart, href: '/dashboard/agents/purchase' },
-    { id: 'agentInventory', label: 'مخزون الوكيل', icon: Briefcase, href: '/dashboard/agents/inventory' },
-    { id: 'orders', label: 'الطلبات', icon: ClipboardList, href: '/dashboard/agents/orders', permission: 'view_orders' },
-    { id: 'returns', label: 'المرتجعات', icon: RefreshCcw, href: '/dashboard/agents/returns', permission: 'manage_returns' },
-    { id: 'vipLevels', label: 'مستويات VIP', icon: Crown, href: '/dashboard/agents/vip-levels', permission: 'manage_settings' },
-    { id: 'agentCommissions', label: 'عمولات الوكلاء', icon: Users, href: '/dashboard/agents/commissions', permission: 'manage_settings' },
-    { id: 'agentCredits', label: 'حدود الائتمان', icon: CreditCard, href: '/dashboard/agents/credits', permission: 'manage_settings' },
-    { id: 'creditRequests', label: 'طلبات المديونية', icon: FileText, href: '/dashboard/agents/credit-requests', permission: 'manage_settings' },
-    { id: 'kycRequests', label: 'طلبات KYC', icon: Shield, href: '/dashboard/agents/kyc', permission: 'manage_settings' },
-    { id: 'agentsList', label: 'قائمة الوكلاء', icon: UserCheck, href: '/dashboard/agents/list', permission: 'manage_users' },
-  ]
-};
-
-// المزودون والشحن
-const providersShippingSection = {
-  id: 'providers_shipping',
-  label: 'المزودون والشحن',
-  icon: Truck,
-  items: [
-    { id: 'providers', label: 'المزودون', icon: Truck, href: '/dashboard/providers', permission: 'manage_providers' },
-    { id: 'providerAPI', label: 'إدارة API الموردين', icon: Download, href: '/dashboard/providers/api', permission: 'manage_settings' },
-    { id: 'shipping', label: 'طلبات الشحن', icon: Truck, href: '/dashboard/shipping' },
-  ]
-};
-
-// العملاء والدعم
-const customersSupportSection = {
-  id: 'customers_support',
-  label: 'العملاء والدعم',
-  icon: UserRound,
-  items: [
-    { id: 'customers', label: 'العملاء', icon: UserRound, href: '/dashboard/customers', permission: 'manage_customers' },
-    { id: 'tickets', label: 'الدعم الفني', icon: TicketCheck, href: '/dashboard/tickets', permission: 'view_tickets' },
-    { id: 'coupons', label: 'العروض والكوبونات', icon: TicketPercent, href: '/dashboard/coupons', permission: 'view_coupons' },
-  ]
-};
-
-// التقارير والسجلات
-const reportsLogsSection = {
-  id: 'reports_logs',
-  label: 'التقارير والسجلات',
-  icon: FileText,
-  items: [
-    { id: 'reports', label: 'التقارير', icon: FileText, href: '/dashboard/reports', permission: 'view_reports' },
-    { id: 'transactions', label: 'سجل الحركات', icon: History, href: '/dashboard/transactions', permission: 'view_transactions' },
-    { id: 'auditLog', label: 'سجل التدقيق', icon: ScrollText, href: '/dashboard/audit-log', permission: 'view_audit_log' },
-    { id: 'connectionLogs', label: 'سجل الاتصال', icon: Wifi, href: '/dashboard/connection-logs', permission: 'manage_settings' },
-  ]
-};
-
-// الإشعارات والتنبيهات
-const notificationsSection = {
-  id: 'notifications',
-  label: 'الإشعارات والتنبيهات',
-  icon: Bell,
-  items: [
-    { id: 'notifications', label: 'الإشعارات', icon: Megaphone, href: '/dashboard/notifications' },
-    { id: 'alerts', label: 'التنبيهات', icon: Bell, href: '/dashboard/alerts', permission: 'manage_alerts' },
-  ]
-};
-
-// إدارة المنصة
-const platformManagementSection = {
-  id: 'platform_management',
-  label: 'إدارة المنصة',
-  icon: Globe,
-  items: [
-    { id: 'platformUsers', label: 'مستخدمو المنصة', icon: Globe, href: '/dashboard/platform/users', permission: 'access_platform_api' },
-    { id: 'livePlatform', label: 'المنصة الحية', icon: Globe, href: '/dashboard/platform/live', permission: 'manage_settings' },
-    { id: 'depositsWithdrawals', label: 'الإيداعات والسحوبات', icon: ArrowDownUp, href: '/dashboard/platform/deposits-withdrawals', permission: 'manage_settings' },
-    { id: 'p2pDeposits', label: 'إيداعات P2P', icon: ArrowDownUp, href: '/dashboard/platform/p2p-deposits', permission: 'manage_p2p_deposits' },
-    { id: 'banners', label: 'إدارة البانرات', icon: Image, href: '/dashboard/platform/banners', permission: 'manage_settings' },
-    { id: 'ticker', label: 'الشريط الإخباري', icon: MessageSquare, href: '/dashboard/platform/ticker', permission: 'manage_settings' },
-  ]
-};
-
-// الإدارة (المستخدمين، الأدوار، إلخ)
-const managementSection = {
-  id: 'management',
-  label: 'الإدارة',
-  icon: Shield,
-  items: [
-    { id: 'users', label: 'المستخدمين (محلي)', icon: Users, href: '/dashboard/users', permission: 'manage_users' },
-    { id: 'staffTracking', label: 'تتبع الموظفين', icon: UserCheck, href: '/dashboard/staff-tracking', permission: 'manage_users' },
-    { id: 'roles', label: 'الأدوار والصلاحيات', icon: Shield, href: '/dashboard/roles', permission: 'manage_roles' },
-    { id: 'paymentMethods', label: 'أدوات مالية', icon: DollarSign, href: '/dashboard/payment-methods', permission: 'manage_settings' },
-    { id: 'profile', label: 'الملف الشخصي', icon: User, href: '/dashboard/profile' },
-    { id: 'changePassword', label: 'تغيير كلمة المرور', icon: Key, href: '/dashboard/change-password' },
-    { id: 'settings', label: 'الإعدادات', icon: Settings, href: '/dashboard/settings', permission: 'manage_settings' },
-  ]
-};
-
-// تجميع كل الأقسام للمدير
+// أقسام المدير (كل الأقسام التي طلبتها)
 const adminSections = [
-  warehouseSection,
-  agentsSection,
-  providersShippingSection,
-  customersSupportSection,
-  reportsLogsSection,
-  notificationsSection,
-  platformManagementSection,
-  managementSection,
+  {
+    id: 'warehouse',
+    label: 'إدارة المستودع',
+    icon: Warehouse,
+    items: [
+      { id: 'warehouse-dashboard', label: 'لوحة المستودع', icon: Warehouse, href: '/dashboard/warehouse' },
+      { id: 'warehouse-assets', label: 'الأصول', icon: Boxes, href: '/dashboard/warehouse/assets' },
+      { id: 'warehouse-products', label: 'المنتجات المحلية', icon: Package, href: '/dashboard/warehouse/products' },
+      { id: 'warehouses', label: 'المستودعات', icon: Layers, href: '/dashboard/warehouse/warehouses' },
+      { id: 'warehouse-providers', label: 'الموردون', icon: Truck, href: '/dashboard/warehouse/providers' },
+      { id: 'warehouse-orders', label: 'الطلبات والمرتجعات', icon: ClipboardList, href: '/dashboard/warehouse/orders' },
+      { id: 'warehouse-reports', label: 'التقارير', icon: BarChart3, href: '/dashboard/warehouse/reports' },
+      { id: 'warehouse-settings', label: 'إعدادات المستودع', icon: Settings, href: '/dashboard/warehouse/settings' },
+      { id: 'warehouse-categories', label: 'فئات الأصول', icon: Folder, href: '/dashboard/warehouse/categories' },
+      { id: 'warehouse-asset-types', label: 'أنواع الأصول', icon: Tag, href: '/dashboard/warehouse/asset-types' },
+      { id: 'warehouse-alerts', label: 'تنبيهات المخزون', icon: AlertTriangle, href: '/dashboard/warehouse/alerts' },
+      { id: 'warehouse-shipping', label: 'طلبات الشحن', icon: Truck, href: '/dashboard/warehouse/shipping' },
+      { id: 'warehouse-bundles', label: 'الحزم', icon: Package, href: '/dashboard/warehouse/bundles' },
+    ]
+  },
+  {
+    id: 'agents',
+    label: 'إدارة الوكلاء',
+    icon: ShoppingCart,
+    items: [
+      { id: 'agentPurchase', label: 'شراء الوكيل', icon: ShoppingCart, href: '/dashboard/agents/purchase' },
+      { id: 'agentInventory', label: 'مخزون الوكيل', icon: Briefcase, href: '/dashboard/agents/inventory' },
+      { id: 'orders', label: 'الطلبات', icon: ClipboardList, href: '/dashboard/agents/orders', permission: 'view_orders' },
+      { id: 'returns', label: 'المرتجعات', icon: RefreshCcw, href: '/dashboard/agents/returns', permission: 'manage_returns' },
+      { id: 'vipLevels', label: 'مستويات VIP', icon: Crown, href: '/dashboard/agents/vip-levels', permission: 'manage_settings' },
+      { id: 'agentCommissions', label: 'عمولات الوكلاء', icon: Users, href: '/dashboard/agents/commissions', permission: 'manage_settings' },
+      { id: 'agentCredits', label: 'حدود الائتمان', icon: CreditCard, href: '/dashboard/agents/credits', permission: 'manage_settings' },
+      { id: 'creditRequests', label: 'طلبات المديونية', icon: FileText, href: '/dashboard/agents/credit-requests', permission: 'manage_settings' },
+      { id: 'kycRequests', label: 'طلبات KYC', icon: Shield, href: '/dashboard/agents/kyc', permission: 'manage_settings' },
+      { id: 'agentsList', label: 'قائمة الوكلاء', icon: UserCheck, href: '/dashboard/agents/list', permission: 'manage_users' },
+    ]
+  },
+  {
+    id: 'providers_shipping',
+    label: 'المزودون والشحن',
+    icon: Truck,
+    items: [
+      { id: 'providers', label: 'المزودون', icon: Truck, href: '/dashboard/providers', permission: 'manage_providers' },
+      { id: 'providerAPI', label: 'إدارة API الموردين', icon: Download, href: '/dashboard/providers/api', permission: 'manage_settings' },
+      { id: 'shipping', label: 'طلبات الشحن', icon: Truck, href: '/dashboard/shipping' },
+    ]
+  },
+  {
+    id: 'customers_support',
+    label: 'العملاء والدعم',
+    icon: UserRound,
+    items: [
+      { id: 'customers', label: 'العملاء', icon: UserRound, href: '/dashboard/customers', permission: 'manage_customers' },
+      { id: 'tickets', label: 'الدعم الفني', icon: TicketCheck, href: '/dashboard/tickets', permission: 'view_tickets' },
+      { id: 'coupons', label: 'العروض والكوبونات', icon: TicketPercent, href: '/dashboard/coupons', permission: 'view_coupons' },
+    ]
+  },
+  {
+    id: 'reports_logs',
+    label: 'التقارير والسجلات',
+    icon: FileText,
+    items: [
+      { id: 'reports', label: 'التقارير', icon: FileText, href: '/dashboard/reports', permission: 'view_reports' },
+      { id: 'transactions', label: 'سجل الحركات', icon: History, href: '/dashboard/transactions', permission: 'view_transactions' },
+      { id: 'auditLog', label: 'سجل التدقيق', icon: ScrollText, href: '/dashboard/audit-log', permission: 'view_audit_log' },
+      { id: 'connectionLogs', label: 'سجل الاتصال', icon: Wifi, href: '/dashboard/connection-logs', permission: 'manage_settings' },
+    ]
+  },
+  {
+    id: 'notifications',
+    label: 'الإشعارات والتنبيهات',
+    icon: Bell,
+    items: [
+      { id: 'notifications', label: 'الإشعارات', icon: Megaphone, href: '/dashboard/notifications' },
+      { id: 'alerts', label: 'التنبيهات', icon: Bell, href: '/dashboard/alerts', permission: 'manage_alerts' },
+    ]
+  },
+  {
+    id: 'platform_management',
+    label: 'إدارة المنصة',
+    icon: Globe,
+    items: [
+      { id: 'platformUsers', label: 'مستخدمو المنصة', icon: Globe, href: '/dashboard/platform/users', permission: 'access_platform_api' },
+      { id: 'livePlatform', label: 'المنصة الحية', icon: Globe, href: '/dashboard/platform/live', permission: 'manage_settings' },
+      { id: 'depositsWithdrawals', label: 'الإيداعات والسحوبات', icon: ArrowDownUp, href: '/dashboard/platform/deposits-withdrawals', permission: 'manage_settings' },
+      { id: 'p2pDeposits', label: 'إيداعات P2P', icon: ArrowDownUp, href: '/dashboard/platform/p2p-deposits', permission: 'manage_p2p_deposits' },
+      { id: 'banners', label: 'إدارة البانرات', icon: Image, href: '/dashboard/platform/banners', permission: 'manage_settings' },
+      { id: 'ticker', label: 'الشريط الإخباري', icon: MessageSquare, href: '/dashboard/platform/ticker', permission: 'manage_settings' },
+    ]
+  },
+  {
+    id: 'management',
+    label: 'الإدارة',
+    icon: Shield,
+    items: [
+      { id: 'users', label: 'المستخدمين (محلي)', icon: Users, href: '/dashboard/users', permission: 'manage_users' },
+      { id: 'staffTracking', label: 'تتبع الموظفين', icon: UserCheck, href: '/dashboard/staff-tracking', permission: 'manage_users' },
+      { id: 'roles', label: 'الأدوار والصلاحيات', icon: Shield, href: '/dashboard/roles', permission: 'manage_roles' },
+      { id: 'paymentMethods', label: 'أدوات مالية', icon: DollarSign, href: '/dashboard/payment-methods', permission: 'manage_settings' },
+      { id: 'profile', label: 'الملف الشخصي', icon: User, href: '/dashboard/profile' },
+      { id: 'changePassword', label: 'تغيير كلمة المرور', icon: Key, href: '/dashboard/change-password' },
+      { id: 'settings', label: 'الإعدادات', icon: Settings, href: '/dashboard/settings', permission: 'manage_settings' },
+    ]
+  },
 ];
 
 export default function DashboardSidebar({ userData }: { userData?: UserData | null }) {
@@ -199,14 +170,9 @@ export default function DashboardSidebar({ userData }: { userData?: UserData | n
   const [isMobile, setIsMobile] = useState(false);
   const [footerCopyright, setFooterCopyright] = useState('© 2025 ModC');
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
-    warehouse: true,
-    agents: false,
-    providers_shipping: false,
-    customers_support: false,
-    reports_logs: false,
-    notifications: false,
-    platform_management: false,
-    management: false,
+    warehouse: true, agents: false, providers_shipping: false,
+    customers_support: false, reports_logs: false, notifications: false,
+    platform_management: false, management: false,
   });
   const pathname = usePathname();
   const router = useRouter();
@@ -219,9 +185,7 @@ export default function DashboardSidebar({ userData }: { userData?: UserData | n
   const isBalanceNegative = (user.balance || 0) < 0;
   const isAdmin = user.role === 'admin' || user.role === 'super_admin';
 
-  const toggleSection = (id: string) => {
-    setOpenSections(prev => ({ ...prev, [id]: !prev[id] }));
-  };
+  const toggleSection = (id: string) => setOpenSections(prev => ({ ...prev, [id]: !prev[id] }));
 
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 768);
@@ -231,7 +195,6 @@ export default function DashboardSidebar({ userData }: { userData?: UserData | n
   }, []);
 
   useEffect(() => { setMobileOpen(false); }, [pathname]);
-
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => { if (e.key === 'Escape') setMobileOpen(false); };
     if (mobileOpen) { document.addEventListener('keydown', handleEscape); document.body.style.overflow = 'hidden'; }
@@ -258,22 +221,14 @@ export default function DashboardSidebar({ userData }: { userData?: UserData | n
     router.push('/sign-up-login-screen');
   };
 
-  const isActive = (href?: string) => {
-    if (!href) return false;
-    return pathname === href || pathname.startsWith(href + '/');
-  };
+  const isActive = (href?: string) => href && (pathname === href || pathname.startsWith(href + '/'));
 
-  const hasPermission = (permission?: string) => {
-    // هنا يمكن تنفيذ منطق التحقق من الصلاحيات بناءً على user
-    // حالياً نفترض أن المدير لديه كل الصلاحيات
-    if (!permission) return true;
-    return isAdmin; // تبسيط: المدير لديه كل الصلاحيات
-  };
+  const hasPermission = (permission?: string) => isAdmin; // المدير لديه كل الصلاحيات
 
   const sidebarContent = (
     <div className="flex flex-col h-full" style={{ background: '#070410', direction: 'rtl' }}>
       <div className="flex-1 overflow-y-auto scrollbar-thin">
-        {/* بطاقة المستخدم (للمدير) */}
+        {/* بطاقة المستخدم */}
         <div className="px-4 pt-6 pb-4">
           <div className="rounded-2xl p-4" style={{ background: 'rgba(12, 113, 178, 0.1)', backdropFilter: 'blur(12px)', border: '1px solid rgba(12, 113, 178, 0.2)' }}>
             <div className="flex justify-center mb-3">
@@ -284,40 +239,38 @@ export default function DashboardSidebar({ userData }: { userData?: UserData | n
               <p className="text-gray-400 text-xs mt-0.5">{user.email}</p>
             </div>
             <div className="text-center mb-3">
-              <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold" style={{ background: 'rgba(12, 113, 178, 0.15)', color: '#0c71b2' }}>مدير المنصة</span>
+              <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold" style={{ background: 'rgba(12, 113, 178, 0.15)', color: '#0c71b2' }}>{isAdmin ? 'مدير المنصة' : 'عميل'}</span>
             </div>
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-sm text-gray-400">الرصيد الحالي</span>
-              <span className="text-sm font-bold" style={{ color: isBalanceNegative ? '#ef4444' : '#22c55e' }}>$ {user.balance?.toFixed(3)}</span>
-            </div>
-            <div className="flex justify-between items-center mb-3">
-              <span className="text-sm text-gray-400">إجمالي</span>
-              <span className="text-sm font-bold text-green-400">{user.total_spent?.toFixed(3)}</span>
-            </div>
-            <div className="flex items-center justify-center gap-2 text-xs text-gray-400"><CreditCard size={14} /><span>عبر مدفوع</span></div>
+            {!isAdmin && (
+              <>
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-sm text-gray-400">الرصيد الحالي</span>
+                  <span className="text-sm font-bold" style={{ color: isBalanceNegative ? '#ef4444' : '#22c55e' }}>$ {user.balance?.toFixed(3)}</span>
+                </div>
+                <div className="flex justify-between items-center mb-3">
+                  <span className="text-sm text-gray-400">إجمالي</span>
+                  <span className="text-sm font-bold text-green-400">{user.total_spent?.toFixed(3)}</span>
+                </div>
+                <div className="flex items-center justify-center gap-2 text-xs text-gray-400"><CreditCard size={14} /><span>عبر مدفوع</span></div>
+              </>
+            )}
+            {isAdmin && (
+              <div className="text-center text-xs text-gray-400 mt-2">مدير – صلاحية كاملة</div>
+            )}
           </div>
         </div>
-
         <div className="border-t mx-4" style={{ borderColor: 'rgba(255,255,255,0.06)' }} />
 
-        {/* إذا كان المستخدم مديراً، نعرض أقسام الإدارة، وإلا نعرض قائمة العميل */}
         {isAdmin ? (
-          // أقسام المدير
+          // قائمة المدير
           <div className="py-2">
             {adminSections.map(section => {
               const visibleItems = section.items.filter(item => hasPermission(item.permission));
               if (visibleItems.length === 0) return null;
-
               return (
                 <div key={section.id} className="mb-2">
-                  <button
-                    onClick={() => toggleSection(section.id)}
-                    className="w-full flex items-center justify-between px-4 py-2 hover:bg-gray-800/50 text-gray-300 rounded-lg"
-                  >
-                    <div className="flex items-center gap-2">
-                      <section.icon size={18} />
-                      <span className="text-sm font-semibold">{section.label}</span>
-                    </div>
+                  <button onClick={() => toggleSection(section.id)} className="w-full flex items-center justify-between px-4 py-2 hover:bg-gray-800/50 text-gray-300 rounded-lg">
+                    <div className="flex items-center gap-2"><section.icon size={18} /><span className="text-sm font-semibold">{section.label}</span></div>
                     {openSections[section.id] ? <ChevronDown size={16} /> : <ChevronLeft size={16} />}
                   </button>
                   {openSections[section.id] && (
@@ -326,11 +279,7 @@ export default function DashboardSidebar({ userData }: { userData?: UserData | n
                         const Icon = item.icon;
                         const active = isActive(item.href);
                         return (
-                          <Link
-                            key={item.id}
-                            href={item.href!}
-                            className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all ${active ? 'text-white bg-cyan-600/20' : 'text-gray-400 hover:text-white hover:bg-gray-800/30'}`}
-                          >
+                          <Link key={item.id} href={item.href!} className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all ${active ? 'text-white bg-cyan-600/20' : 'text-gray-400 hover:text-white hover:bg-gray-800/30'}`}>
                             <Icon size={16} style={{ color: active ? '#0c71b2' : undefined }} />
                             <span className="text-sm flex-1 text-right">{item.label}</span>
                           </Link>
@@ -375,11 +324,8 @@ export default function DashboardSidebar({ userData }: { userData?: UserData | n
                   const Icon = item.icon;
                   return (
                     <li key={item.id}>
-                      <Link href={item.disabled ? '#' : item.href!} onClick={e => item.disabled && e.preventDefault()}
-                        className={`flex items-center gap-3 px-3 py-2.5 rounded-xl ${item.disabled ? 'text-gray-600 cursor-not-allowed' : 'text-gray-400 hover:text-white'}`}>
-                        <Icon size={18} />
-                        <span className="text-sm font-medium flex-1 text-right">{item.label}</span>
-                        {item.badge && <span className="text-xs px-1.5 py-0.5 rounded bg-gray-700/50 text-gray-500">{item.badge}</span>}
+                      <Link href={item.disabled ? '#' : item.href!} onClick={e => item.disabled && e.preventDefault()} className={`flex items-center gap-3 px-3 py-2.5 rounded-xl ${item.disabled ? 'text-gray-600 cursor-not-allowed' : 'text-gray-400 hover:text-white'}`}>
+                        <Icon size={18} /><span className="text-sm font-medium flex-1 text-right">{item.label}</span>{item.badge && <span className="text-xs px-1.5 py-0.5 rounded bg-gray-700/50 text-gray-500">{item.badge}</span>}
                       </Link>
                     </li>
                   );
@@ -389,44 +335,28 @@ export default function DashboardSidebar({ userData }: { userData?: UserData | n
           </>
         )}
 
-        {/* زر تثبيت التطبيق (للمدير والعميل) */}
         {canInstallPwa && (
           <div className="px-3 py-2 border-t mx-4" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
-            <button onClick={installPwa} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-400 hover:text-white hover:bg-violet-500/8 transition-all">
-              <Download size={18} />
-              <span className="text-sm">تثبيت التطبيق</span>
-            </button>
+            <button onClick={installPwa} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-400 hover:text-white hover:bg-violet-500/8 transition-all"><Download size={18} /><span className="text-sm">تثبيت التطبيق</span></button>
           </div>
         )}
       </div>
-
       <div className="flex-shrink-0 px-4 py-3 text-center"><p className="text-xs text-gray-600">{footerCopyright}</p></div>
       <div className="flex-shrink-0 px-3 pb-4">
-        <button onClick={() => setLogoutModal(true)} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-red-400 hover:bg-red-500/10">
-          <LogOut size={18} /><span className="text-sm">تسجيل الخروج</span>
-        </button>
+        <button onClick={() => setLogoutModal(true)} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-red-400 hover:bg-red-500/10"><LogOut size={18} /><span className="text-sm">تسجيل الخروج</span></button>
       </div>
     </div>
   );
 
   return (
     <>
-      {isMobile && (
-        <button onClick={() => setMobileOpen(true)} className="fixed top-4 right-4 z-40 w-10 h-10 rounded-xl flex items-center justify-center"
-          style={{ background: 'rgba(12, 113, 178, 0.15)', border: '1px solid rgba(12, 113, 178, 0.3)', color: '#0c71b2' }}>
-          <Menu size={20} />
-        </button>
-      )}
-      {!isMobile && (
-        <aside className="h-screen sticky top-0 flex-shrink-0" style={{ width: '280px', borderLeft: '1px solid rgba(255,255,255,0.06)' }}>
-          {sidebarContent}
-        </aside>
-      )}
+      {isMobile && <button onClick={() => setMobileOpen(true)} className="fixed top-4 right-4 z-40 w-10 h-10 rounded-xl flex items-center justify-center bg-cyan-600/20 border border-cyan-600/40"><Menu size={20} className="text-cyan-400" /></button>}
+      {!isMobile && <aside className="h-screen sticky top-0 flex-shrink-0" style={{ width: '280px', borderLeft: '1px solid rgba(255,255,255,0.06)' }}>{sidebarContent}</aside>}
       {isMobile && mobileOpen && (
         <div className="fixed inset-0 z-50">
           <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setMobileOpen(false)} />
           <div className="absolute top-0 right-0 bottom-0 w-[280px] shadow-2xl" style={{ background: '#070410' }}>
-            <button onClick={() => setMobileOpen(false)} className="absolute top-4 left-4 z-10 w-8 h-8 rounded-lg flex items-center justify-center text-gray-400" style={{ background: 'rgba(255,255,255,0.05)' }}><X size={16} /></button>
+            <button onClick={() => setMobileOpen(false)} className="absolute top-4 left-4 z-10 w-8 h-8 rounded-lg flex items-center justify-center bg-black/50"><X size={16} /></button>
             {sidebarContent}
           </div>
         </div>
@@ -436,18 +366,10 @@ export default function DashboardSidebar({ userData }: { userData?: UserData | n
           <div className="rounded-2xl p-6 w-80 text-center border bg-[#111128] border-gray-700">
             <h3 className="text-lg font-bold text-white mb-4">تسجيل الخروج</h3>
             <p className="text-gray-400 mb-6">هل أنت متأكد أنك تريد تسجيل الخروج؟</p>
-            <div className="flex gap-3">
-              <button onClick={() => { handleLogout(); setLogoutModal(false); }} className="flex-1 py-2 rounded-xl bg-red-600 text-white font-bold">نعم</button>
-              <button onClick={() => setLogoutModal(false)} className="flex-1 py-2 rounded-xl bg-gray-700 text-white font-bold">لا</button>
-            </div>
+            <div className="flex gap-3"><button onClick={() => { handleLogout(); setLogoutModal(false); }} className="flex-1 py-2 rounded-xl bg-red-600 text-white font-bold">نعم</button><button onClick={() => setLogoutModal(false)} className="flex-1 py-2 rounded-xl bg-gray-700 text-white font-bold">لا</button></div>
           </div>
         </div>
       )}
     </>
   );
 }
-
-// استيراد ChevronLeft و ChevronDown من lucide-react (تم إضافتها أعلاه) 
-// لكنني نسيت إضافتها، لذا سأضيفها الآن:
-// import { ChevronLeft, ChevronDown } from 'lucide-react';
-// يجب إضافتها مع الواردات في أعلى الملف.
