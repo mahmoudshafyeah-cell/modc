@@ -12,15 +12,26 @@ interface BuyButtonProps {
   minQuantity?: number;
   maxQuantity?: number;
   isDirectProvider?: boolean;
+  playerRequired?: boolean;   // ✅ أضفنا playerRequired
 }
 
-export default function BuyButton({ productId, price, stock, isVariableQuantity, minQuantity, maxQuantity, isDirectProvider }: BuyButtonProps) {
+export default function BuyButton({
+  productId,
+  price,
+  stock,
+  isVariableQuantity,
+  minQuantity,
+  maxQuantity,
+  isDirectProvider,
+  playerRequired,
+}: BuyButtonProps) {
   const [loading, setLoading] = useState(false);
   const [couponCode, setCouponCode] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
   const [finalPrice, setFinalPrice] = useState(price);
   const [checkingCoupon, setCheckingCoupon] = useState(false);
   const [quantity, setQuantity] = useState(1);
+  const [playerId, setPlayerId] = useState('');   // ✅ حالة معرف اللاعب
   const router = useRouter();
 
   const effectiveMin = minQuantity || 1;
@@ -74,6 +85,12 @@ export default function BuyButton({ productId, price, stock, isVariableQuantity,
       return;
     }
 
+    // ✅ التحقق من إدخال playerId إذا كان مطلوباً
+    if (playerRequired && !playerId.trim()) {
+      toast.error('يرجى إدخال معرف اللاعب (Player ID)');
+      return;
+    }
+
     const totalPrice = finalPrice * quantity;
 
     setLoading(true);
@@ -81,6 +98,7 @@ export default function BuyButton({ productId, price, stock, isVariableQuantity,
       const body: any = { productId };
       if (appliedCoupon) body.couponCode = appliedCoupon.code;
       if (isVariableQuantity) body.quantity = quantity;
+      if (playerRequired) body.playerId = playerId.trim();   // ✅ إضافة playerId
 
       const res = await fetch('/api/purchase', {
         method: 'POST',
@@ -92,7 +110,7 @@ export default function BuyButton({ productId, price, stock, isVariableQuantity,
 
       toast.success('تم الشراء بنجاح!');
       if (data.code) {
-        alert(`🎉 تم شراء المنتج بنجاح!\n\nالكود الخاص بك:\n${data.code}\n\nتم خصم $${totalPrice.toFixed(2)} من رصيدك.`);
+        alert(`🎉 تم شراء المنتج بنجاح!\n\nالكود الخاص بك:\n${data.code}\n\nتم خصم $${totalPrice.toFixed(2)} من رصيدك.\n${playerRequired ? `معرف اللاعب: ${playerId}` : ''}`);
       }
       router.push('/customer-dashboard');
     } catch (error: any) {
@@ -120,13 +138,23 @@ export default function BuyButton({ productId, price, stock, isVariableQuantity,
             disabled={!!appliedCoupon}
           />
           {!appliedCoupon ? (
-            <button onClick={handleApplyCoupon} disabled={checkingCoupon || !couponCode.trim()}
-              className="px-4 py-2 rounded-lg bg-violet-600 text-white text-sm font-bold disabled:opacity-50">
+            <button
+              onClick={handleApplyCoupon}
+              disabled={checkingCoupon || !couponCode.trim()}
+              className="px-4 py-2 rounded-lg bg-violet-600 text-white text-sm font-bold disabled:opacity-50"
+            >
               {checkingCoupon ? <Loader2 size={16} className="animate-spin" /> : 'تطبيق'}
             </button>
           ) : (
-            <button onClick={() => { setAppliedCoupon(null); setFinalPrice(price); setCouponCode(''); toast.info('تم إلغاء الكوبون'); }}
-              className="px-4 py-2 rounded-lg bg-red-600/20 text-red-400 text-sm font-bold border border-red-500/30">
+            <button
+              onClick={() => {
+                setAppliedCoupon(null);
+                setFinalPrice(price);
+                setCouponCode('');
+                toast.info('تم إلغاء الكوبون');
+              }}
+              className="px-4 py-2 rounded-lg bg-red-600/20 text-red-400 text-sm font-bold border border-red-500/30"
+            >
               إلغاء
             </button>
           )}
@@ -157,6 +185,24 @@ export default function BuyButton({ productId, price, stock, isVariableQuantity,
           />
           <p className="text-xs text-gray-500 mt-2 text-center">
             السعر الإجمالي: ${(finalPrice * quantity).toFixed(2)}
+          </p>
+        </div>
+      )}
+
+      {/* ✅ حقل معرف اللاعب (يظهر فقط إذا كان المنتج يتطلب ذلك) */}
+      {playerRequired && (
+        <div className="bg-dark-50 rounded-xl p-4 border border-gray-700">
+          <label className="block text-sm text-gray-300 mb-2">معرف اللاعب (Player ID)</label>
+          <input
+            type="text"
+            value={playerId}
+            onChange={(e) => setPlayerId(e.target.value)}
+            placeholder="أدخل معرف اللاعب"
+            className="w-full p-3 rounded-xl bg-dark-100 border border-gray-600 text-white text-right"
+            required
+          />
+          <p className="text-xs text-gray-500 mt-2 text-center">
+            سيتم ربط المنتج بمعرف اللاعب هذا عند التسليم.
           </p>
         </div>
       )}
