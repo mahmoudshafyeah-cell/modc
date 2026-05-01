@@ -4,7 +4,7 @@ import jwt from 'jsonwebtoken';
 
 const JWT_SECRET = process.env.JWT_SECRET!;
 
-// دالة مساعدة لتسجيل نشاط
+// دالة مساعدة  نشاط
 export async function logActivity(
   userId: string,
   userEmail: string,
