@@ -1,4 +1,3 @@
-// src/app/admin/login/page.tsx
 'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -37,12 +36,12 @@ export default function AdminLoginPage() {
         return;
       }
 
-      // تخزين التوكن فقط (بدون التحقق من الدور)
+      // تخزين التوكن
       localStorage.setItem('auth_token', data.session.access_token);
-      localStorage.setItem('user_role', 'super_admin'); // تجاوز مؤقت للاختبار
       
+      // ✅ التوجيه المباشر إلى لوحة التحكم (بدون أي تحقق إضافي)
       toast.success('تم تسجيل الدخول بنجاح');
-      router.push('/admin/dashboard');
+      window.location.href = '/admin/dashboard';
     } catch (err: any) {
       toast.error(err.message || 'حدث خطأ غير متوقع');
       setLoading(false);
@@ -65,7 +64,7 @@ export default function AdminLoginPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full p-3 rounded-xl bg-gray-800 border border-gray-700 text-white focus:border-cyan-500 outline-none"
-              placeholder="admin@modc.sy"
+              placeholder="admin@modc.syria"
               required
             />
           </div>
