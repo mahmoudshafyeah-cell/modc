@@ -1,15 +1,15 @@
 'use client';
 import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import jwt from 'jsonwebtoken';
+import { jwtDecode } from 'jwt-decode';
 
-interface Props {
-  children: React.ReactNode;
-  allowedRoles: string[];
-  redirectTo: string;
+interface DecodedToken {
+  role?: string;
+  app_metadata?: { role?: string };
+  user_metadata?: { role?: string };
 }
 
-export default function AuthGuard({ children, allowedRoles, redirectTo }: Props) {
+export default function AuthGuard({ children, allowedRoles, redirectTo }: { children: React.ReactNode; allowedRoles: string[]; redirectTo: string }) {
   const router = useRouter();
   const [isAuthorized, setIsAuthorized] = useState(false);
   const checkedRef = useRef(false);
@@ -24,8 +24,10 @@ export default function AuthGuard({ children, allowedRoles, redirectTo }: Props)
       return;
     }
     try {
-      const decoded = jwt.decode(token) as { role: string };
-      if (!decoded || !allowedRoles.includes(decoded.role)) {
+      const decoded = jwtDecode<DecodedToken>(token);
+      // قراءة الدور من عدة أماكن محتملة
+      const userRole = decoded.role || decoded.app_metadata?.role || decoded.user_metadata?.role;
+      if (!userRole || !allowedRoles.includes(userRole)) {
         router.replace(redirectTo);
         return;
       }
