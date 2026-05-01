@@ -1,5 +1,7 @@
+// src/app/dashboard/components/WalletModalProvider.tsx
 'use client';
 import { createContext, useContext, ReactNode } from 'react';
+import { toast } from 'sonner';
 
 interface WalletModalsContextType {
   openDeposit: () => void;
@@ -10,11 +12,14 @@ const WalletModalsContext = createContext<WalletModalsContextType | undefined>(u
 
 export function WalletModalProvider({ children }: { children: ReactNode }) {
   const openDeposit = () => {
-    console.warn('Deposit modal not available in admin panel');
+    // هنا يمكنك إضافة منطق فتح نافذة الإيداع
+    toast.info('سيتم إضافة وظيفة الإيداع قريبًا');
   };
+  
   const openWithdraw = () => {
-    console.warn('Withdraw modal not available in admin panel');
+    toast.info('سيتم إضافة وظيفة السحب قريبًا');
   };
+
   return (
     <WalletModalsContext.Provider value={{ openDeposit, openWithdraw }}>
       {children}
@@ -24,6 +29,8 @@ export function WalletModalProvider({ children }: { children: ReactNode }) {
 
 export function useWalletModals() {
   const context = useContext(WalletModalsContext);
-  if (!context) throw new Error('useWalletModals must be used within WalletModalProvider');
+  if (!context) {
+    throw new Error('useWalletModals must be used within WalletModalProvider');
+  }
   return context;
 }

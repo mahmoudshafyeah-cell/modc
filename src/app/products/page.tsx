@@ -1,181 +1,196 @@
 // src/app/products/page.tsx
 'use client';
 import { useState, useEffect } from 'react';
+import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
-import { Search, Zap } from 'lucide-react';
-import ProductBanner from './components/ProductBanner';
-import TickerBar from './components/TickerBar';
-import DashboardSidebar from '@/app/(main)/customer-dashboard/components/DashboardSidebar';
-import DashboardTopbar from '@/app/(main)/customer-dashboard/components/DashboardTopbar';
-import { jwtDecode } from 'jwt-decode';
+import { Search, Filter, Grid3x3, LayoutList } from 'lucide-react';
+
+interface Category {
+  id: string;
+  name: string;
+  icon?: string;
+  image_url?: string;
+}
+
+interface Product {
+  id: string;
+  name: string;
+  price: number;
+  image_url: string;
+  category_id: string;
+  description: string;
+}
 
 export default function ProductsPage() {
-  const [products, setProducts] = useState<any[]>([]);
-  const [categories, setCategories] = useState<any[]>([]);
-  const [activeFilter, setActiveFilter] = useState('all');
-  const [search, setSearch] = useState('');
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [loading, setLoading] = useState(true);
-  const [sortBy, setSortBy] = useState<'default' | 'price-asc' | 'price-desc'>('default');
-  const [userData, setUserData] = useState<any>(null);
 
   useEffect(() => {
-    const token = localStorage.getItem('auth_token');
-    if (token) {
-      try {
-        const decoded = jwtDecode(token);
-        setUserData(decoded);
-      } catch {}
-    }
     fetchCategories();
+    fetchProducts();
   }, []);
 
-  useEffect(() => {
-    fetchProducts();
-  }, [activeFilter]);
-
-  const getHeaders = () => {
-    const token = localStorage.getItem('auth_token');
-    return token ? { 'Authorization': `Bearer ${token}` } : {};
-  };
-
   async function fetchCategories() {
-    try {
-      const res = await fetch('/api/categories', { headers: getHeaders() });
-      const data = await res.json();
-      if (res.ok) setCategories(data.categories || []);
-    } catch {}
+    const { data } = await supabase.from('categories').select('*').order('name');
+    setCategories(data || []);
   }
 
   async function fetchProducts() {
     setLoading(true);
-    try {
-      const url = activeFilter === 'all'
-        ? '/api/products?limit=100'
-        : `/api/products?category=${activeFilter}&limit=100`;
-      const res = await fetch(url, { headers: getHeaders() });
-      const data = await res.json();
-      if (res.ok) setProducts(data.products || []);
-    } catch (error) {
-      console.error('فشل جلب المنتجات:', error);
-    } finally {
-      setLoading(false);
+    let query = supabase.from('products').select('*');
+    if (selectedCategory) {
+      query = query.eq('category_id', selectedCategory);
     }
+    const { data } = await query;
+    setProducts(data || []);
+    setLoading(false);
   }
 
-  let filtered = products.filter(p =>
-    !search || p.name?.toLowerCase().includes(search.toLowerCase())
+  useEffect(() => {
+    fetchProducts();
+  }, [selectedCategory]);
+
+  const filteredProducts = products.filter(p =>
+    p.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  if (sortBy === 'price-asc') filtered.sort((a, b) => a.price - b.price);
-  if (sortBy === 'price-desc') filtered.sort((a, b) => b.price - a.price);
-
-  const filterTabs = [
-    { id: 'all', label: 'الكل' },
-    ...categories.map(c => ({ id: c.id, label: `${c.icon || '📁'} ${c.name_ar}` }))
-  ];
-
-  const content = (
-    <div className="space-y-6" dir="rtl">
-      <ProductBanner />
-      <TickerBar />
-
-      <div className="flex items-center justify-between flex-wrap gap-4">
-        <h1 className="text-2xl font-bold text-white">المنتجات</h1>
-        <div className="flex items-center gap-2">
-          <div className="relative">
-            <Search size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500" />
-            <input
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              placeholder="ابحث عن منتج..."
-              className="w-full pr-10 py-3 rounded-xl bg-dark-100 border border-gray-700 text-white"
-            />
-          </div>
-          <select
-            value={sortBy}
-            onChange={e => setSortBy(e.target.value as any)}
-            className="p-3 rounded-xl bg-dark-100 border border-gray-700 text-white text-sm"
-          >
-            <option value="default">الافتراضي</option>
-            <option value="price-asc">السعر: من الأقل إلى الأعلى</option>
-            <option value="price-desc">السعر: من الأعلى إلى الأقل</option>
-          </select>
-        </div>
-      </div>
-
-      <div className="flex flex-wrap gap-2 mb-8">
-        {filterTabs.map(tab => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveFilter(tab.id)}
-            className={`px-5 py-2.5 rounded-xl text-sm font-semibold transition-all ${
-              activeFilter === tab.id ? 'bg-violet-600 text-white' : 'bg-dark-100 text-gray-400 hover:text-white'
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
-      {loading ? (
-        <div className="flex justify-center py-16">
-          <div className="w-10 h-10 border-3 border-violet-500/30 border-t-violet-500 rounded-full animate-spin" />
-        </div>
-      ) : filtered.length === 0 ? (
-        <div className="text-center py-16">
-          <div className="text-5xl mb-4">🔍</div>
-          <h3 className="text-xl font-bold text-white">لا توجد منتجات</h3>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {filtered.map(product => {
-            const color = product.categories?.color || '#6C3AFF';
-            return (
-              <Link
-                key={product.id}
-                href={`/products/${product.id}`}
-                className="group rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-2 block"
-                style={{ background: 'rgba(17,17,40,0.9)', border: '1px solid rgba(108,58,255,0.12)' }}
-              >
-                <div
-                  className="h-40 flex items-center justify-center text-6xl"
-                  style={{ background: `linear-gradient(135deg, ${color}18, ${color}08)` }}
-                >
-                  {product.image || '📦'}
-                </div>
-                <div className="p-5">
-                  <h3 className="font-bold text-white">{product.name}</h3>
-                  <div className="flex items-center justify-between mt-3">
-                    <span className="text-lg font-black text-white">${product.price}</span>
-                    <span className="flex items-center gap-1 text-xs text-violet-400">
-                      <Zap size={12} />
-                      {product.delivery_time || 'فوري'}
-                    </span>
-                  </div>
-                </div>
-              </Link>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
-
-  if (userData) {
-    return (
-      <div className="flex h-screen overflow-hidden" style={{ background: '#0A0A14' }} dir="rtl">
-        <DashboardSidebar userData={userData} />
-        <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-          <DashboardTopbar userData={userData} />
-          <main className="flex-1 overflow-y-auto p-6">{content}</main>
-        </div>
-      </div>
-    );
+  // تقسيم الفئات إلى مجموعات من 3 أو 4 حسب الشاشة
+  const chunkSize = 4; // يمكن تغييرها إلى 3
+  const categoryChunks = [];
+  for (let i = 0; i < categories.length; i += chunkSize) {
+    categoryChunks.push(categories.slice(i, i + chunkSize));
   }
 
   return (
-    <div className="min-h-screen bg-dark-50 py-12" dir="rtl">
-      <div className="max-w-screen-2xl mx-auto px-6 lg:px-10">{content}</div>
+    <div dir="rtl" className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800">
+      <div className="container mx-auto px-4 py-8">
+        {/* عنوان الصفحة */}
+        <h1 className="text-3xl font-bold text-white text-center mb-8">منتجاتنا</h1>
+
+        {/* عرض الفئات على شكل رباعيات/ثلاثيات */}
+        <div className="mb-12">
+          <h2 className="text-xl font-semibold text-cyan-400 mb-4 text-right">الفئات</h2>
+          <div className="space-y-6">
+            {categoryChunks.map((chunk, idx) => (
+              <div key={idx} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {chunk.map(cat => (
+                  <button
+                    key={cat.id}
+                    onClick={() => setSelectedCategory(cat.id === selectedCategory ? null : cat.id)}
+                    className={`group p-4 rounded-2xl text-center transition-all duration-300 ${
+                      selectedCategory === cat.id
+                        ? 'bg-cyan-600 text-white shadow-lg scale-105'
+                        : 'bg-gray-800 text-gray-300 hover:bg-gray-700 hover:scale-105'
+                    }`}
+                  >
+                    {cat.image_url ? (
+                      <img src={cat.image_url} alt={cat.name} className="w-16 h-16 mx-auto mb-2 rounded-full" />
+                    ) : (
+                      <div className="w-16 h-16 mx-auto mb-2 rounded-full bg-cyan-500/20 flex items-center justify-center text-2xl">
+                        {cat.icon || '📁'}
+                      </div>
+                    )}
+                    <span className="font-medium">{cat.name}</span>
+                  </button>
+                ))}
+              </div>
+            ))}
+          </div>
+          {selectedCategory && (
+            <button
+              onClick={() => setSelectedCategory(null)}
+              className="mt-4 text-sm text-cyan-400 hover:text-cyan-300 transition"
+            >
+              عرض جميع المنتجات
+            </button>
+          )}
+        </div>
+
+        {/* شريط البحث والتحكم */}
+        <div className="flex flex-wrap justify-between items-center gap-4 mb-6 bg-gray-800/50 p-4 rounded-xl">
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+            <input
+              type="text"
+              placeholder="ابحث عن منتج..."
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+              className="w-full pr-10 pl-4 py-2 rounded-xl bg-gray-700 text-white border border-gray-600 focus:border-cyan-500 outline-none"
+            />
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setViewMode('grid')}
+              className={`p-2 rounded-lg transition ${viewMode === 'grid' ? 'bg-cyan-600 text-white' : 'bg-gray-700 text-gray-400'}`}
+            >
+              <Grid3x3 size={18} />
+            </button>
+            <button
+              onClick={() => setViewMode('list')}
+              className={`p-2 rounded-lg transition ${viewMode === 'list' ? 'bg-cyan-600 text-white' : 'bg-gray-700 text-gray-400'}`}
+            >
+              <LayoutList size={18} />
+            </button>
+          </div>
+        </div>
+
+        {/* عرض المنتجات */}
+        {loading ? (
+          <div className="flex justify-center py-20">
+            <div className="w-10 h-10 border-3 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin" />
+          </div>
+        ) : filteredProducts.length === 0 ? (
+          <div className="text-center py-20 text-gray-400">لا توجد منتجات</div>
+        ) : viewMode === 'grid' ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {filteredProducts.map(product => (
+              <Link href={`/products/${product.id}`} key={product.id} className="group bg-gray-800 rounded-2xl overflow-hidden hover:scale-105 transition duration-300">
+                <div className="h-48 bg-gray-700 flex items-center justify-center">
+                  {product.image_url ? (
+                    <img src={product.image_url} alt={product.name} className="h-full w-full object-cover" />
+                  ) : (
+                    <Package size={48} className="text-gray-500" />
+                  )}
+                </div>
+                <div className="p-4 text-right">
+                  <h3 className="text-lg font-bold text-white mb-1">{product.name}</h3>
+                  <p className="text-gray-400 text-sm line-clamp-2">{product.description}</p>
+                  <div className="flex justify-between items-center mt-3">
+                    <span className="text-cyan-400 font-bold">${product.price}</span>
+                    <button className="px-4 py-1.5 rounded-lg bg-cyan-600 text-white text-sm hover:bg-cyan-700 transition">
+                      شراء
+                    </button>
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {filteredProducts.map(product => (
+              <Link href={`/products/${product.id}`} key={product.id} className="block bg-gray-800 rounded-xl p-4 hover:bg-gray-700 transition">
+                <div className="flex items-center gap-4">
+                  <div className="w-16 h-16 bg-gray-700 rounded-lg flex items-center justify-center">
+                    {product.image_url ? <img src={product.image_url} className="h-full w-full object-cover rounded-lg" /> : <Package size={24} className="text-gray-500" />}
+                  </div>
+                  <div className="flex-1 text-right">
+                    <h3 className="text-white font-bold">{product.name}</h3>
+                    <p className="text-gray-400 text-sm">{product.description}</p>
+                  </div>
+                  <div className="text-left">
+                    <span className="text-cyan-400 font-bold">${product.price}</span>
+                    <button className="block mt-1 px-3 py-1 rounded-lg bg-cyan-600 text-white text-xs">شراء</button>
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

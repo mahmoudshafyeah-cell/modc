@@ -1,3 +1,4 @@
+// src/app/dashboard/components/DashboardSidebar.tsx
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
@@ -11,8 +12,8 @@ import {
   Crown, TicketPercent, Megaphone, Image, MessageSquare,
   Globe, ArrowDownUp, UserCheck, Key, DollarSign, ScrollText,
   Briefcase, ClipboardList, History, Wifi, Bell, TicketCheck,
-  UserRound, Crown as CrownIcon, FileCheck, Lock, Info,
-  ChevronLeft, ChevronDown
+  UserRound, ChevronLeft, ChevronDown, Crown as CrownIcon,
+  FileCheck, Lock, Info, HelpCircle, Grid, List, Eye, EyeOff, Zap
 } from 'lucide-react';
 import { useWalletModals } from './WalletModalProvider';
 
@@ -42,7 +43,7 @@ const DEFAULT_USER: UserData = {
   balance: -144.665, total_spent: 0.552, wallet_id: '3249#',
 };
 
-// قائمة العميل (لن تظهر للمدير)
+// قائمة العميل الأساسية (لن تظهر للمدير)
 const mainNavItems: NavItem[] = [
   { id: 'nav-home', label: 'الرئيسية', icon: Home, href: '/customer-dashboard' },
   { id: 'nav-add-balance', label: 'اضافة رصيد', icon: PlusCircle, action: 'deposit' },
@@ -56,7 +57,7 @@ const bottomItems: NavItem[] = [
   { id: 'nav-rpi', label: 'RPI', icon: TrendingUp, disabled: true, badge: 'قريباً' },
 ];
 
-// أقسام المدير (كل الأقسام التي طلبتها)
+// أقسام المدير الكاملة
 const adminSections = [
   {
     id: 'warehouse',
@@ -195,6 +196,7 @@ export default function DashboardSidebar({ userData }: { userData?: UserData | n
   }, []);
 
   useEffect(() => { setMobileOpen(false); }, [pathname]);
+
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => { if (e.key === 'Escape') setMobileOpen(false); };
     if (mobileOpen) { document.addEventListener('keydown', handleEscape); document.body.style.overflow = 'hidden'; }
@@ -223,7 +225,7 @@ export default function DashboardSidebar({ userData }: { userData?: UserData | n
 
   const isActive = (href?: string) => href && (pathname === href || pathname.startsWith(href + '/'));
 
-  const hasPermission = (permission?: string) => isAdmin; // المدير لديه كل الصلاحيات
+  const hasPermission = (permission?: string) => isAdmin;
 
   const sidebarContent = (
     <div className="flex flex-col h-full" style={{ background: '#070410', direction: 'rtl' }}>
@@ -254,15 +256,11 @@ export default function DashboardSidebar({ userData }: { userData?: UserData | n
                 <div className="flex items-center justify-center gap-2 text-xs text-gray-400"><CreditCard size={14} /><span>عبر مدفوع</span></div>
               </>
             )}
-            {isAdmin && (
-              <div className="text-center text-xs text-gray-400 mt-2">مدير – صلاحية كاملة</div>
-            )}
           </div>
         </div>
         <div className="border-t mx-4" style={{ borderColor: 'rgba(255,255,255,0.06)' }} />
 
         {isAdmin ? (
-          // قائمة المدير
           <div className="py-2">
             {adminSections.map(section => {
               const visibleItems = section.items.filter(item => hasPermission(item.permission));
@@ -292,7 +290,6 @@ export default function DashboardSidebar({ userData }: { userData?: UserData | n
             })}
           </div>
         ) : (
-          // قائمة العميل العادية
           <>
             <nav className="py-2 px-3">
               <ul className="space-y-0.5">
@@ -350,13 +347,13 @@ export default function DashboardSidebar({ userData }: { userData?: UserData | n
 
   return (
     <>
-      {isMobile && <button onClick={() => setMobileOpen(true)} className="fixed top-4 right-4 z-40 w-10 h-10 rounded-xl flex items-center justify-center bg-cyan-600/20 border border-cyan-600/40"><Menu size={20} className="text-cyan-400" /></button>}
+      {isMobile && <button onClick={() => setMobileOpen(true)} className="fixed top-4 right-4 z-40 w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'rgba(12, 113, 178, 0.15)', border: '1px solid rgba(12, 113, 178, 0.3)', color: '#0c71b2' }}><Menu size={20} /></button>}
       {!isMobile && <aside className="h-screen sticky top-0 flex-shrink-0" style={{ width: '280px', borderLeft: '1px solid rgba(255,255,255,0.06)' }}>{sidebarContent}</aside>}
       {isMobile && mobileOpen && (
         <div className="fixed inset-0 z-50">
           <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setMobileOpen(false)} />
-          <div className="absolute top-0 right-0 bottom-0 w-[280px] shadow-2xl" style={{ background: '#070410' }}>
-            <button onClick={() => setMobileOpen(false)} className="absolute top-4 left-4 z-10 w-8 h-8 rounded-lg flex items-center justify-center bg-black/50"><X size={16} /></button>
+          <div className="absolute top-0 right-0 bottom-0 w-[280px] shadow-down" style={{ background: '#070410' }}>
+            <button onClick={() => setMobileOpen(false)} className="absolute top-4 left-4 z-10 w-8 h-8 rounded-lg flex items-center justify-center text-gray-400" style={{ background: 'rgba(255,255,255,0.05)' }}><X size={16} /></button>
             {sidebarContent}
           </div>
         </div>

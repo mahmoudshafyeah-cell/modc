@@ -1,10 +1,15 @@
+// src/app/dashboard/layout.tsx
 'use client';
 import { ReactNode } from 'react';
 import DashboardSidebar from './components/DashboardSidebar';
 import { WalletModalProvider } from './components/WalletModalProvider';
-import { useAuth } from '@/contexts/AuthContext'; // تأكد من صحة المسار
+import { AuthProvider, useAuth } from '@/contexts';
 
-export default function DashboardLayout({ children }: { children: ReactNode }) {
+interface DashboardLayoutProps {
+  children: ReactNode;
+}
+
+function DashboardContent({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth();
 
   if (loading) {
@@ -19,8 +24,16 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     <WalletModalProvider>
       <div className="flex h-screen bg-gray-900" dir="rtl">
         <DashboardSidebar userData={user} />
-        <main className="flex-1 overflow-y-auto">{children}</main>
+        <main className="flex-1 overflow-y-auto p-4">{children}</main>
       </div>
     </WalletModalProvider>
+  );
+}
+
+export default function DashboardLayout({ children }: DashboardLayoutProps) {
+  return (
+    <AuthProvider>
+      <DashboardContent>{children}</DashboardContent>
+    </AuthProvider>
   );
 }
