@@ -123,6 +123,7 @@ export default function AdminDashboardPage() {
             ))}
           </div>
 
+
           <div className="bg-dark-100 rounded-xl p-6 border border-gray-800">
             <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
               <TrendingUp size={18} className="text-cyan-400" />
