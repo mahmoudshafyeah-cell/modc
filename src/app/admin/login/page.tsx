@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@supabase/supabase-js';
 import { toast } from 'sonner';
+import { setUserRole } from '@/lib/roleGuard';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -36,12 +37,33 @@ export default function AdminLoginPage() {
         return;
       }
 
-      // تخزين التوكن
+      // ✅ جلب الدور من جدول profiles
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', data.user.id)
+        .single();
+
+      if (profileError || !profile) {
+        toast.error('لم يتم العثور على صلاحيات المستخدم');
+        setLoading(false);
+        return;
+      }
+
+      // ✅ التحقق من الصلاحية (فقط super_admin يمكنه الدخول)
+      if (profile.role !== 'super_admin') {
+        toast.error('غير مصرح لك بالدخول إلى لوحة التحكم');
+        await supabase.auth.signOut();
+        setLoading(false);
+        return;
+      }
+
+      // ✅ تخزين التوكن والدور
       localStorage.setItem('auth_token', data.session.access_token);
+      setUserRole('super_admin');
       
-      // ✅ التوجيه المباشر إلى لوحة التحكم (بدون أي تحقق إضافي)
       toast.success('تم تسجيل الدخول بنجاح');
-      window.location.href = '/admin/dashboard';
+      router.push('/admin/dashboard');
     } catch (err: any) {
       toast.error(err.message || 'حدث خطأ غير متوقع');
       setLoading(false);
