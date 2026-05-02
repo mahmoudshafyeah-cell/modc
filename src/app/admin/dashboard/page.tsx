@@ -11,7 +11,16 @@ import {
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+// ✅ دالة مساعدة لإنشاء عميل Supabase مع التوكن الحالي
+const getSupabaseClient = () => {
+  const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
+  return createClient(supabaseUrl, supabaseAnonKey, {
+    global: {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    },
+  });
+};
 
 interface Stats {
   totalUsers: number;
@@ -55,6 +64,8 @@ export default function AdminDashboardPage() {
 
   async function fetchStats() {
     try {
+      const supabase = getSupabaseClient();
+      
       const [
         { count: totalUsers },
         { count: totalAgents },
@@ -107,21 +118,31 @@ export default function AdminDashboardPage() {
   }
 
   async function fetchRecentOrders() {
-    const { data } = await supabase
-      .from('purchases')
-      .select('id, amount, status, created_at, profiles(email)')
-      .order('created_at', { ascending: false })
-      .limit(5);
-    setRecentOrders(data || []);
+    try {
+      const supabase = getSupabaseClient();
+      const { data } = await supabase
+        .from('purchases')
+        .select('id, amount, status, created_at, profiles(email)')
+        .order('created_at', { ascending: false })
+        .limit(5);
+      setRecentOrders(data || []);
+    } catch (error) {
+      console.error('Error fetching recent orders:', error);
+    }
   }
 
   async function fetchRecentUsers() {
-    const { data } = await supabase
-      .from('profiles')
-      .select('id, email, full_name, role, created_at')
-      .order('created_at', { ascending: false })
-      .limit(5);
-    setRecentUsers(data || []);
+    try {
+      const supabase = getSupabaseClient();
+      const { data } = await supabase
+        .from('profiles')
+        .select('id, email, full_name, role, created_at')
+        .order('created_at', { ascending: false })
+        .limit(5);
+      setRecentUsers(data || []);
+    } catch (error) {
+      console.error('Error fetching recent users:', error);
+    }
   }
 
   const statCards = [
@@ -158,7 +179,6 @@ export default function AdminDashboardPage() {
 
   return (
     <div dir="rtl" className="space-y-6 p-6">
-      {/* رأس الصفحة */}
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div className="flex items-center gap-3">
           <div className="bg-cyan-600/20 p-3 rounded-xl">
@@ -180,7 +200,6 @@ export default function AdminDashboardPage() {
         </div>
       ) : (
         <>
-          {/* البطاقات الإحصائية الرئيسية */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {statCards.slice(0, 4).map(stat => (
               <Link
@@ -199,7 +218,6 @@ export default function AdminDashboardPage() {
             ))}
           </div>
 
-          {/* البطاقات الإحصائية الثانوية */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {statCards.slice(4, 8).map(stat => (
               <Link
@@ -233,7 +251,6 @@ export default function AdminDashboardPage() {
             ))}
           </div>
 
-          {/* الروابط السريعة */}
           <div className="bg-dark-100 rounded-xl p-6 border border-gray-800">
             <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
               <Zap size={18} className="text-cyan-400" />
@@ -253,9 +270,7 @@ export default function AdminDashboardPage() {
             </div>
           </div>
 
-          {/* آخر الطلبات وآخر المستخدمين */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* آخر الطلبات */}
             <div className="bg-dark-100 rounded-xl p-6 border border-gray-800">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-lg font-bold text-white flex items-center gap-2">
@@ -286,7 +301,6 @@ export default function AdminDashboardPage() {
               )}
             </div>
 
-            {/* آخر المستخدمين */}
             <div className="bg-dark-100 rounded-xl p-6 border border-gray-800">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-lg font-bold text-white flex items-center gap-2">
