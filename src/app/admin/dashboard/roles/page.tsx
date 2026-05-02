@@ -3,7 +3,6 @@ import { useEffect, useState } from 'react';
 import { createAuthenticatedClient } from '@/lib/supabase';
 import { Plus, Save, Trash2, Edit, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
-import AuthGuard from '@/components/AuthGuard';
 
 interface Role {
   id: string;

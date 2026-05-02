@@ -3,7 +3,6 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { RefreshCw, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
-import AuthGuard from '@/components/AuthGuard';
 
 export default function ReturnsPage() {
   const [returns, setReturns] = useState<any[]>([]);

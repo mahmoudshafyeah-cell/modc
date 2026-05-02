@@ -3,7 +3,6 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { RefreshCw, Edit, Save, X } from 'lucide-react';
 import { toast } from 'sonner';
-import AuthGuard from '@/components/AuthGuard';
 
 interface AgentCommission {
   id: string;

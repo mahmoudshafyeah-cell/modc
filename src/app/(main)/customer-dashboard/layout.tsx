@@ -1,5 +1,4 @@
 'use client';
-import AuthGuard from '@/components/AuthGuard';
 import { WalletProvider } from './components/WalletContext';
 
 export default function CustomerDashboardLayout({ children }: { children: React.ReactNode }) {

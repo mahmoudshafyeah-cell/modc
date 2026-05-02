@@ -2,7 +2,6 @@
 import { useEffect, useState } from 'react';
 import { getSupabase } from '@/lib/supabaseClient';
 import { toast } from 'sonner';
-import AuthGuard from '@/components/AuthGuard';
 import { Plus, Edit, Trash2, Upload, Globe } from 'lucide-react';
 
 export default function ProductsPage() {

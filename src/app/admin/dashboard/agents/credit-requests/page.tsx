@@ -3,7 +3,6 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { RefreshCw, CheckCircle, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
-import AuthGuard from '@/components/AuthGuard';
 
 interface CreditRequest {
   id: string;

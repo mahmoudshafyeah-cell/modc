@@ -9,7 +9,6 @@ import CustomersPage from '@/app/admin/dashboard/customers/page';
 import TicketsPage from '@/app/admin/dashboard/tickets/page';
 import SettingsPage from '@/app/admin/dashboard/settings/page';
 import { Package, Users, CreditCard, TicketPercent, UserRound, TicketCheck, Settings } from 'lucide-react';
-import AuthGuard from '@/components/AuthGuard';
 
 export default function LivePlatformPage() {
   const { hasPermission } = useAuth();

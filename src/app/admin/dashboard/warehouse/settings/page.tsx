@@ -2,7 +2,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
-import AuthGuard from '@/components/AuthGuard';
 import { Save, Download, Upload, AlertTriangle } from 'lucide-react';
 
 export default function WarehouseSettingsPage() {

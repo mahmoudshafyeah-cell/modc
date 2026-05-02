@@ -2,7 +2,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
-import AuthGuard from '@/components/AuthGuard';
 import { Save, RefreshCw, Upload, X } from 'lucide-react';
 
 interface Settings {

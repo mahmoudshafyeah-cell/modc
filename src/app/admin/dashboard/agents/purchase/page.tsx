@@ -3,7 +3,6 @@ import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { ShoppingCart, Loader2 } from 'lucide-react';
-import AuthGuard from '@/components/AuthGuard';
 
 export default function AgentPurchasePage() {
   const [productId, setProductId] = useState('');

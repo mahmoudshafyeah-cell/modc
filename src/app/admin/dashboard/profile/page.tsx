@@ -3,7 +3,6 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { Save, Upload, X } from 'lucide-react';
-import AuthGuard from '@/components/AuthGuard';
 
 export default function ProfilePage() {
   const [user, setUser] = useState<any>(null);

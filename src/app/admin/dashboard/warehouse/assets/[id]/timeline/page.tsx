@@ -4,7 +4,6 @@ import { supabase } from '@/lib/supabase';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowRight, RefreshCw } from 'lucide-react';
-import AuthGuard from '@/components/AuthGuard';
 
 export default function AssetTimelinePage() {
   const { id } = useParams();

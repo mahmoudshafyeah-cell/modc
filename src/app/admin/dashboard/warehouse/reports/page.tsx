@@ -6,7 +6,6 @@ import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { toast } from 'sonner';
-import AuthGuard from '@/components/AuthGuard';
 
 export default function ReportsPage() {
   const [transactions, setTransactions] = useState<any[]>([]);

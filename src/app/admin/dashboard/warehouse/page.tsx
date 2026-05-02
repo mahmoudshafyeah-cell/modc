@@ -3,7 +3,6 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
 import { Package, Boxes, TrendingUp, DollarSign, RefreshCw, Warehouse, Truck, FileText, Bell, Layers, Tag, Gift, ClipboardList, Shield, Settings } from 'lucide-react';
-import AuthGuard from '@/components/AuthGuard';
 
 export default function WarehouseDashboardPage() {
   const [stats, setStats] = useState({ totalAssets: 0, availableAssets: 0, soldToday: 0, revenueToday: 0 });

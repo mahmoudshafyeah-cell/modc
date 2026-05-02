@@ -2,7 +2,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { RefreshCw, Search } from 'lucide-react';
-import AuthGuard from '@/components/AuthGuard';
 
 export default function AuditLogPage() {
   const [logs, setLogs] = useState<any[]>([]);

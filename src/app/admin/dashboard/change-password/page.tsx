@@ -3,7 +3,6 @@ import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { Save } from 'lucide-react';
-import AuthGuard from '@/components/AuthGuard';
 import bcrypt from 'bcryptjs';
 
 export default function ChangePasswordPage() {

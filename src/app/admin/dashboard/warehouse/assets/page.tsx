@@ -4,7 +4,6 @@ import { supabase } from '@/lib/supabase';
 import { Search, Plus, Edit, Trash2, RefreshCw, History, ArrowRightLeft, CheckSquare, Square } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
-import AuthGuard from '@/components/AuthGuard';
 import TransferAssetModal from '@/components/warehouse/TransferAssetModal';
 import AssetTimelineModal from '@/components/warehouse/AssetTimelineModal';
 

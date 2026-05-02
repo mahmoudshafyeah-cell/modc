@@ -3,7 +3,6 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useRouter, useParams } from 'next/navigation';
 import { toast } from 'sonner';
-import AuthGuard from '@/components/AuthGuard';
 
 export default function EditAssetPage() {
   const router = useRouter();
